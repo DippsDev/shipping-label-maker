@@ -39,10 +39,10 @@ export default function CreateLabel() {
             {/* Sidebar */}
             <aside className={`fixed xl:static inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 flex flex-col transform transition-transform duration-300 ease-in-out ${showMobileMenu ? 'translate-x-0' : '-translate-x-full'} xl:translate-x-0`}>
                 <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
+                    <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
                         <Package className="h-6 w-6 text-gray-700" />
                         <span className="text-lg font-semibold text-gray-900">Label Maker</span>
-                    </div>
+                    </Link>
                     <button
                         onClick={() => setShowMobileMenu(false)}
                         className="xl:hidden p-2 hover:bg-gray-100 rounded-lg"
@@ -54,7 +54,7 @@ export default function CreateLabel() {
                 <nav className="flex-1 p-4">
                     <ul className="space-y-2">
                         <li>
-                            <Link href="/" className="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">
+                            <Link href="/dashboard" className="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">
                                 <LayoutDashboard className="h-5 w-5" />
                                 <span>Dashboard</span>
                             </Link>
@@ -81,12 +81,6 @@ export default function CreateLabel() {
                             <Link href="/addresses" className="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">
                                 <MapPin className="h-5 w-5" />
                                 <span>Addresses</span>
-                            </Link>
-                        </li>
-                        <li>
-                            <Link href="/tracking" className="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">
-                                <Search className="h-5 w-5" />
-                                <span>Tracking</span>
                             </Link>
                         </li>
                     </ul>

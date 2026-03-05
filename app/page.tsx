@@ -15,7 +15,7 @@ export default function Home() {
             <Link href="/login" className="text-sm md:text-base text-gray-600 hover:text-gray-900 transition-colors">
               Login
             </Link>
-            <Link href="/create-label" className="bg-gray-900 text-white px-3 py-1.5 md:px-4 md:py-2 rounded-lg hover:bg-gray-800 transition-colors text-sm md:text-base">
+            <Link href="/login" className="bg-gray-900 text-white px-3 py-1.5 md:px-4 md:py-2 rounded-lg hover:bg-gray-800 transition-colors text-sm md:text-base">
               Get Started
             </Link>
           </div>
@@ -31,7 +31,7 @@ export default function Home() {
           Professional shipping label generation for UPS, FedEx, USPS, Purolator, and Canada Post. Fast, reliable, and affordable.
         </p>
         <div className="flex items-center justify-center gap-4">
-          <Link href="/create-label" className="bg-gray-900 text-white px-6 py-3 rounded-lg hover:bg-gray-800 transition-colors flex items-center gap-2">
+          <Link href="/login" className="bg-gray-900 text-white px-6 py-3 rounded-lg hover:bg-gray-800 transition-colors flex items-center gap-2">
             <Zap className="h-5 w-5" />
             Start Creating Labels
           </Link>
@@ -126,7 +126,7 @@ export default function Home() {
           <p className="text-lg text-gray-300 mb-8">
             Create your account today and start generating professional shipping labels in minutes.
           </p>
-          <Link href="/create-label" className="inline-block bg-white text-gray-900 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors">
+          <Link href="/signup" className="inline-block bg-white text-gray-900 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors">
             Create Free Account
           </Link>
         </div>

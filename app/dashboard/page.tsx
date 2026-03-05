@@ -3,11 +3,15 @@
 import Link from "next/link";
 import { Package, LayoutDashboard, Tag, History, Wallet, MapPin, Search, Settings, Menu, X } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
+import { useSession, signOut } from "@/lib/auth-client";
+import { useRouter } from "next/navigation";
 
 export default function Dashboard() {
     const [showAccountMenu, setShowAccountMenu] = useState(false);
     const [showMobileMenu, setShowMobileMenu] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
+    const { data: session, isPending } = useSession();
+    const router = useRouter();
 
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
@@ -25,6 +29,39 @@ export default function Dashboard() {
         };
     }, [showAccountMenu]);
 
+    // Redirect to login if not authenticated
+    useEffect(() => {
+        if (!isPending && !session) {
+            router.push("/login");
+        }
+    }, [session, isPending, router]);
+
+    const handleSignOut = async () => {
+        await signOut();
+        router.push("/login");
+    };
+
+    // Show loading state while checking authentication
+    if (isPending) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Loading...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Don't render if not authenticated
+    if (!session) {
+        return null;
+    }
+
+    const userInitials = session.user?.name
+        ? session.user.name.split(" ").map(n => n[0]).join("").toUpperCase()
+        : session.user?.email?.[0].toUpperCase() || "U";
+
     return (
         <div className="flex min-h-screen bg-gray-50">
             {/* Mobile Menu Overlay */}
@@ -38,10 +75,10 @@ export default function Dashboard() {
             {/* Sidebar */}
             <aside className={`fixed xl:static inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 flex flex-col transform transition-transform duration-300 ease-in-out ${showMobileMenu ? 'translate-x-0' : '-translate-x-full'} xl:translate-x-0`}>
                 <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
+                    <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
                         <Package className="h-6 w-6 text-gray-700" />
                         <span className="text-lg font-semibold text-gray-900">Label Maker</span>
-                    </div>
+                    </Link>
                     <button
                         onClick={() => setShowMobileMenu(false)}
                         className="xl:hidden p-2 hover:bg-gray-100 rounded-lg"
@@ -82,12 +119,6 @@ export default function Dashboard() {
                                 <span>Addresses</span>
                             </Link>
                         </li>
-                        <li>
-                            <Link href="/tracking" className="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">
-                                <Search className="h-5 w-5" />
-                                <span>Tracking</span>
-                            </Link>
-                        </li>
                     </ul>
                 </nav>
 
@@ -121,48 +152,34 @@ export default function Dashboard() {
                             className="flex items-center gap-3 -ml-[3px] hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors"
                         >
                             <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
-                                <span className="text-sm font-medium text-gray-900">PA</span>
+                                <span className="text-sm font-medium text-gray-900">{userInitials}</span>
                             </div>
-                            <span className="text-xs md:text-sm text-gray-600 hidden sm:inline">Platform Admin</span>
+                            <span className="text-xs md:text-sm text-gray-600 hidden sm:inline">{session.user?.name || session.user?.email}</span>
                         </button>
 
                         {showAccountMenu && (
                             <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
-                                <div className="px-4 py-2 border-b border-gray-200">
-                                    <p className="text-xs text-gray-500 uppercase font-medium">Switch Account</p>
+                                <div className="px-4 py-3 border-b border-gray-200">
+                                    <p className="text-xs text-gray-500 uppercase font-medium mb-2">Account</p>
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                                            <span className="text-sm font-medium text-gray-900">{userInitials}</span>
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-medium text-gray-900">{session.user?.name || "User"}</p>
+                                            <p className="text-xs text-gray-500">{session.user?.email}</p>
+                                        </div>
+                                    </div>
                                 </div>
-                                <button className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
-                                        <span className="text-sm font-medium text-gray-900">PA</span>
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-medium text-gray-900">Platform Admin</p>
-                                        <p className="text-xs text-gray-500">admin@labelapp.com</p>
-                                    </div>
-                                </button>
-                                <button className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                                        <span className="text-sm font-medium text-blue-900">JD</span>
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-medium text-gray-900">John Doe</p>
-                                        <p className="text-xs text-gray-500">john@example.com</p>
-                                    </div>
-                                </button>
-                                <button className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
-                                        <span className="text-sm font-medium text-green-900">SM</span>
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-medium text-gray-900">Sarah Miller</p>
-                                        <p className="text-xs text-gray-500">sarah@example.com</p>
-                                    </div>
-                                </button>
-                                <div className="border-t border-gray-200 mt-2 pt-2">
-                                    <button className="w-full px-4 py-2 text-left hover:bg-gray-50 text-sm text-gray-700">
-                                        Add Account
-                                    </button>
-                                    <button className="w-full px-4 py-2 text-left hover:bg-gray-50 text-sm text-red-600">
+                                <div className="border-t border-gray-200 pt-2">
+                                    <Link href="/settings" className="w-full px-4 py-2 text-left hover:bg-gray-50 text-sm text-gray-700 flex items-center gap-2">
+                                        <Settings className="h-4 w-4" />
+                                        Settings
+                                    </Link>
+                                    <button
+                                        onClick={handleSignOut}
+                                        className="w-full px-4 py-2 text-left hover:bg-gray-50 text-sm text-red-600"
+                                    >
                                         Sign Out
                                     </button>
                                 </div>
@@ -204,17 +221,11 @@ export default function Dashboard() {
 
                     <div className="bg-white rounded-lg border border-gray-200 p-6">
                         <h2 className="text-xl font-semibold text-gray-900 mb-4">Quick Start</h2>
-                        <div className="grid md:grid-cols-2 gap-4">
+                        <div className="grid md:grid-cols-1 gap-4">
                             <Link href="/create-label" className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-gray-400 hover:bg-gray-50 transition-colors">
                                 <Tag className="h-8 w-8 text-gray-600 mb-2" />
                                 <h3 className="font-semibold text-gray-900 mb-1">Create New Label</h3>
                                 <p className="text-sm text-gray-600">Generate a shipping label for your package</p>
-                            </Link>
-
-                            <Link href="/tracking" className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-gray-400 hover:bg-gray-50 transition-colors">
-                                <Search className="h-8 w-8 text-gray-600 mb-2" />
-                                <h3 className="font-semibold text-gray-900 mb-1">Track Package</h3>
-                                <p className="text-sm text-gray-600">Check the status of your shipments</p>
                             </Link>
                         </div>
                     </div>
