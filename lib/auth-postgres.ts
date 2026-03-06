@@ -5,7 +5,7 @@ import { Pool } from "@vercel/postgres";
 const getDatabase = () => {
     if (process.env.POSTGRES_URL) {
         // Production: Use Vercel Postgres
-        return new Pool({ connectionString: process.env.POSTGRES_URL });
+        return new Pool();
     } else {
         // Development: Use SQLite
         const { kyselyAdapter } = require("@better-auth/kysely-adapter");
