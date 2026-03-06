@@ -13,6 +13,7 @@
     "@aws-sdk/rds-signer": "^3.1003.0",
     "@better-auth/kysely-adapter": "^1.5.3",
     "@vercel/functions": "^3.4.3",
+    "@vercel/postgres": "^0.10.0",
     "better-auth": "^1.5.3",
     "better-sqlite3": "^12.6.2",
     "kysely": "^0.28.11",
