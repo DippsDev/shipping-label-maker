@@ -14,6 +14,10 @@ export default function CreateLabel() {
     const [isGenerating, setIsGenerating] = useState(false);
     const [generationError, setGenerationError] = useState("");
     const [generationSuccess, setGenerationSuccess] = useState("");
+    const [uploadedLabel, setUploadedLabel] = useState<File | null>(null);
+    const [isProcessingLabel, setIsProcessingLabel] = useState(false);
+    const [lastGeneratedLabel, setLastGeneratedLabel] = useState<Blob | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Form data
     const [trackingNumber, setTrackingNumber] = useState("");
@@ -23,13 +27,13 @@ export default function CreateLabel() {
     const [shipToCity, setShipToCity] = useState("");
     const [shipToState, setShipToState] = useState("");
     const [shipToZip, setShipToZip] = useState("");
-    const [weight, setWeight] = useState("70");
+    const [weight, setWeight] = useState("");
     const [fileName, setFileName] = useState("");
     const [phone, setPhone] = useState("");
     const [country, setCountry] = useState("United States");
-    const [length, setLength] = useState("19");
-    const [width, setWidth] = useState("17");
-    const [height, setHeight] = useState("13");
+    const [length, setLength] = useState("");
+    const [width, setWidth] = useState("");
+    const [height, setHeight] = useState("");
     const [upsZone, setUpsZone] = useState("");
     const [sortingCode, setSortingCode] = useState("");
 
@@ -91,6 +95,160 @@ export default function CreateLabel() {
             .slice(0, 2);
     };
 
+    const handleResetForm = () => {
+        // Reset carrier and service
+        setSelectedCarrier("UPS");
+        setSelectedService("");
+
+        // Reset form fields
+        setTrackingNumber("");
+        setShipToName("");
+        setShipToAddress("");
+        setShipToAddress2("");
+        setShipToCity("");
+        setShipToState("");
+        setShipToZip("");
+        setWeight("");
+        setFileName("");
+        setPhone("");
+        setCountry("United States");
+        setLength("");
+        setWidth("");
+        setHeight("");
+        setUpsZone("");
+        setSortingCode("");
+
+        // Clear uploaded label
+        setUploadedLabel(null);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = "";
+        }
+
+        // Clear generated label
+        setLastGeneratedLabel(null);
+
+        // Clear messages
+        setGenerationError("");
+        setGenerationSuccess("");
+    };
+
+    const handleLabelUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+            setGenerationError("Please upload an image file (PNG, JPG, etc.)");
+            return;
+        }
+
+        setUploadedLabel(file);
+        setIsProcessingLabel(true);
+        setGenerationError("");
+        setGenerationSuccess("");
+
+        try {
+            // Create FormData to send the image
+            const formData = new FormData();
+            formData.append('label', file);
+
+            // Send to OCR/processing endpoint
+            const response = await fetch('/api/process-label', {
+                method: 'POST',
+                body: formData,
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to process label');
+            }
+
+            const data = await response.json();
+
+            // Auto-fill form fields with extracted data
+            if (data.carrier) setSelectedCarrier(data.carrier);
+            if (data.service) setSelectedService(data.service);
+            if (data.trackingNumber) setTrackingNumber(data.trackingNumber);
+            if (data.shipToName) setShipToName(data.shipToName);
+            if (data.shipToAddress) setShipToAddress(data.shipToAddress);
+            if (data.shipToAddress2) setShipToAddress2(data.shipToAddress2);
+            if (data.shipToCity) setShipToCity(data.shipToCity);
+            if (data.shipToState) setShipToState(data.shipToState);
+            if (data.shipToZip) setShipToZip(data.shipToZip);
+            if (data.weight) setWeight(data.weight);
+            if (data.phone) setPhone(data.phone);
+
+            setGenerationSuccess("Label processed successfully! Review the auto-filled information.");
+        } catch (error) {
+            console.error('Label processing error:', error);
+            setGenerationError(
+                'Could not automatically extract data from the label. ' +
+                'The OCR service may not be configured yet. Please fill in the form manually.'
+            );
+        } finally {
+            setIsProcessingLabel(false);
+        }
+    };
+
+    const handleSelectFile = () => {
+        fileInputRef.current?.click();
+    };
+
+    const handleRemoveLabel = () => {
+        setUploadedLabel(null);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = "";
+        }
+    };
+
+    const handleDownloadLabel = () => {
+        if (!lastGeneratedLabel) {
+            setGenerationError("No label has been generated yet. Please generate a label first.");
+            return;
+        }
+
+        try {
+            const url = window.URL.createObjectURL(lastGeneratedLabel);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `label_${trackingNumber || 'output'}.png`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            setGenerationSuccess("Label downloaded successfully!");
+        } catch (error) {
+            console.error('Download error:', error);
+            setGenerationError("Failed to download label. Please try again.");
+        }
+    };
+
+    const handlePrintLabel = () => {
+        if (!lastGeneratedLabel) {
+            setGenerationError("No label has been generated yet. Please generate a label first.");
+            return;
+        }
+
+        try {
+            const url = window.URL.createObjectURL(lastGeneratedLabel);
+            const printWindow = window.open(url, '_blank');
+
+            if (printWindow) {
+                printWindow.onload = () => {
+                    printWindow.print();
+                    // Clean up after a delay to allow print dialog to open
+                    setTimeout(() => {
+                        window.URL.revokeObjectURL(url);
+                    }, 1000);
+                };
+            } else {
+                setGenerationError("Pop-up blocked. Please allow pop-ups to print labels.");
+            }
+        } catch (error) {
+            console.error('Print error:', error);
+            setGenerationError("Failed to print label. Please try again.");
+        }
+    };
+
     const handleGenerateLabel = async () => {
         setGenerationError("");
         setGenerationSuccess("");
@@ -138,6 +296,7 @@ export default function CreateLabel() {
                 shipToPostal: shipToZip,
                 weight,
                 fileName: fileName || `label_${trackingNumber}`,
+                hasOriginalLabel: uploadedLabel !== null,
             };
 
             const response = await fetch('/api/generate-label', {
@@ -158,11 +317,20 @@ export default function CreateLabel() {
 
             if (contentType?.includes('application/json')) {
                 const result = await response.json();
-                setGenerationError(result.message || 'Label generation not yet configured. See console for setup instructions.');
+                setGenerationError(
+                    result.message || 'Label generation backend not configured. ' +
+                    'Please see LABEL_SETUP.md in the website folder for setup instructions.'
+                );
                 console.log('Setup Instructions:', result.instructions);
+                console.log('📋 See website/LABEL_SETUP.md for detailed setup guide');
             } else {
-                // It's an image - download it
+                // It's an image - save it and download it
                 const blob = await response.blob();
+
+                // Store the blob for download/print buttons
+                setLastGeneratedLabel(blob);
+
+                // Auto-download
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
@@ -172,7 +340,7 @@ export default function CreateLabel() {
                 window.URL.revokeObjectURL(url);
                 document.body.removeChild(a);
 
-                setGenerationSuccess("Label generated successfully!");
+                setGenerationSuccess("Label generated successfully! Use Download or Print buttons below.");
             }
         } catch (error) {
             console.error('Label generation error:', error);
@@ -417,7 +585,7 @@ export default function CreateLabel() {
                                             />
                                             <button
                                                 onClick={() => setTrackingNumber("")}
-                                                className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                                                className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700"
                                             >
                                                 ✕
                                             </button>
@@ -434,10 +602,34 @@ export default function CreateLabel() {
                                 <div className="grid md:grid-cols-2 gap-4 mb-4">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-900 mb-2">Original Label (Optional)</label>
-                                        <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 w-full justify-center">
-                                            <Download className="h-4 w-4" />
-                                            Select File
-                                        </button>
+                                        <input
+                                            ref={fileInputRef}
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={handleLabelUpload}
+                                            className="hidden"
+                                        />
+                                        {!uploadedLabel ? (
+                                            <button
+                                                onClick={handleSelectFile}
+                                                disabled={isProcessingLabel}
+                                                className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 w-full justify-center text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                <Download className="h-4 w-4" />
+                                                {isProcessingLabel ? "Processing..." : "Select File"}
+                                            </button>
+                                        ) : (
+                                            <div className="flex items-center gap-2 px-4 py-2 border border-green-300 bg-green-50 rounded-lg">
+                                                <span className="text-sm text-green-700 flex-1 truncate">{uploadedLabel.name}</span>
+                                                <button
+                                                    onClick={handleRemoveLabel}
+                                                    className="text-green-600 hover:text-green-800"
+                                                >
+                                                    <X className="h-4 w-4" />
+                                                </button>
+                                            </div>
+                                        )}
+                                        <p className="text-xs text-gray-500 mt-1">Upload to auto-fill form data</p>
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-900 mb-2">Weight (lbs)</label>
@@ -485,12 +677,12 @@ export default function CreateLabel() {
                             <div className="bg-white rounded-lg border border-gray-200 p-4 md:p-6">
                                 <div className="flex items-center justify-between mb-4">
                                     <h2 className="text-base md:text-lg font-semibold text-gray-900">Ship To</h2>
-                                    <button className="flex items-center gap-2 px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50 text-xs md:text-sm">
+                                    <button className="flex items-center gap-2 px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50 text-xs md:text-sm text-gray-700">
                                         <BookOpen className="h-4 w-4" />
                                         <span className="hidden sm:inline">Address Book</span>
                                     </button>
                                 </div>
-                                <p className="text-xs md:text-sm text-gray-600 mb-4">Enter the recipient's address</p>
+                                <p className="text-xs md:text-sm text-gray-600 mb-4">Enter the recipients address</p>
 
                                 <div className="grid md:grid-cols-2 gap-4">
                                     <div>
@@ -574,7 +766,7 @@ export default function CreateLabel() {
                                                 placeholder="Enter ZIP code"
                                                 value={shipToZip}
                                                 onChange={(e) => setShipToZip(e.target.value)}
-                                                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900"
+                                                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900"
                                             />
                                             <button className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
                                                 📍
@@ -667,14 +859,62 @@ export default function CreateLabel() {
                                 </div>
                             </div>
 
+                            {/* Error/Success Messages */}
+                            {generationError && (
+                                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                                    <div className="flex items-start gap-3">
+                                        <div className="flex-shrink-0 w-5 h-5 rounded-full bg-red-100 flex items-center justify-center">
+                                            <span className="text-red-600 text-sm font-bold">!</span>
+                                        </div>
+                                        <div className="flex-1">
+                                            <h3 className="text-sm font-medium text-red-800 mb-1">Error</h3>
+                                            <p className="text-sm text-red-700">{generationError}</p>
+                                        </div>
+                                        <button
+                                            onClick={() => setGenerationError("")}
+                                            className="flex-shrink-0 text-red-400 hover:text-red-600"
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {generationSuccess && (
+                                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                                    <div className="flex items-start gap-3">
+                                        <div className="flex-shrink-0 w-5 h-5 rounded-full bg-green-100 flex items-center justify-center">
+                                            <span className="text-green-600 text-sm font-bold">✓</span>
+                                        </div>
+                                        <div className="flex-1">
+                                            <h3 className="text-sm font-medium text-green-800 mb-1">Success</h3>
+                                            <p className="text-sm text-green-700">{generationSuccess}</p>
+                                        </div>
+                                        <button
+                                            onClick={() => setGenerationSuccess("")}
+                                            className="flex-shrink-0 text-green-400 hover:text-green-600"
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Action Buttons */}
                             <div className="flex flex-col sm:flex-row gap-4">
-                                <button className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 text-sm md:text-base">
+                                <button
+                                    onClick={handleResetForm}
+                                    className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 text-sm md:text-base"
+                                >
                                     🔄 Reset Form
                                 </button>
-                                <button className="flex-1 flex items-center justify-center gap-2 bg-gray-900 text-white px-6 py-3 rounded-lg hover:bg-gray-800 font-medium text-sm md:text-base">
+                                <button
+                                    onClick={handleGenerateLabel}
+                                    disabled={isGenerating}
+                                    className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-medium text-sm md:text-base ${isGenerating ? 'bg-gray-600 cursor-wait text-white' : 'bg-gray-900 hover:bg-gray-800 text-white'}`}
+                                >
                                     <Package className="h-5 w-5" />
-                                    Generate Label
+                                    {isGenerating ? "Generating…" : "Generate Label"}
                                 </button>
                             </div>
                         </div>
@@ -745,18 +985,35 @@ export default function CreateLabel() {
                                 </div>
 
                                 <div className="space-y-3">
-                                    <button className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700">
+                                    <button
+                                        onClick={handleDownloadLabel}
+                                        disabled={!lastGeneratedLabel}
+                                        className={`w-full flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 ${lastGeneratedLabel
+                                            ? 'hover:bg-gray-50 cursor-pointer'
+                                            : 'opacity-50 cursor-not-allowed'
+                                            }`}
+                                    >
                                         <Download className="h-4 w-4" />
                                         Download
                                     </button>
-                                    <button className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700">
+                                    <button
+                                        onClick={handlePrintLabel}
+                                        disabled={!lastGeneratedLabel}
+                                        className={`w-full flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 ${lastGeneratedLabel
+                                            ? 'hover:bg-gray-50 cursor-pointer'
+                                            : 'opacity-50 cursor-not-allowed'
+                                            }`}
+                                    >
                                         <Printer className="h-4 w-4" />
                                         Print
                                     </button>
                                 </div>
 
                                 <p className="text-xs text-gray-500 mt-4 text-center">
-                                    Preview updates automatically based on selected carrier: <span className="font-semibold text-gray-700">{selectedCarrier}</span>
+                                    {lastGeneratedLabel
+                                        ? "Label ready! Click Download or Print above."
+                                        : "Generate a label to enable download and print options."
+                                    }
                                 </p>
                             </div>
                         </div>

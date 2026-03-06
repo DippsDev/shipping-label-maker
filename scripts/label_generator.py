@@ -1,6 +1,7 @@
 """
 Label Generator API
 Replicates the desktop application's label generation logic for web use.
+Includes OCR functionality to extract data from uploaded labels.
 """
 
 from flask import Flask, request, jsonify, send_file
@@ -12,6 +13,7 @@ import io
 import os
 import random
 from datetime import datetime
+import re
 
 app = Flask(__name__)
 CORS(app)
@@ -20,6 +22,17 @@ CORS(app)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 RESOURCES_DIR = os.path.join(BASE_DIR, '..', 'public', 'label-templates')
 FONTS_DIR = os.path.join(RESOURCES_DIR, 'fonts')
+
+# Try to import OCR library (optional)
+try:
+    import pytesseract
+    from PIL import Image
+    OCR_AVAILABLE = True
+except ImportError:
+    OCR_AVAILABLE = False
+    print("Warning: pytesseract not installed. OCR functionality will be disabled.")
+    print("Install with: pip install pytesseract")
+    print("Also install Tesseract OCR: https://github.com/tesseract-ocr/tesseract")
 
 # Template mapping
 TEMPLATES = {
@@ -251,3 +264,155 @@ def health():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
+
+
+def extract_tracking_number(text):
+    """Extract tracking number from OCR text"""
+    # UPS tracking: 1Z followed by 16 characters
+    ups_pattern = r'1Z[A-Z0-9]{16}'
+    # FedEx tracking: 12-14 digits
+    fedex_pattern = r'\b\d{12,14}\b'
+    # USPS tracking: 20-22 digits
+    usps_pattern = r'\b\d{20,22}\b'
+    # Canada Post: 16 digits
+    canada_pattern = r'\b\d{16}\b'
+    
+    patterns = [
+        (ups_pattern, 'UPS'),
+        (usps_pattern, 'USPS'),
+        (fedex_pattern, 'FedEx'),
+        (canada_pattern, 'Canada Post'),
+    ]
+    
+    for pattern, carrier in patterns:
+        match = re.search(pattern, text)
+        if match:
+            return match.group(0), carrier
+    
+    return None, None
+
+
+def extract_zip_code(text):
+    """Extract ZIP/postal code from text"""
+    # US ZIP: 5 digits or 5+4
+    us_zip = r'\b\d{5}(?:-\d{4})?\b'
+    # Canadian postal: A1A 1A1
+    ca_postal = r'\b[A-Z]\d[A-Z]\s?\d[A-Z]\d\b'
+    
+    # Try Canadian first (more specific)
+    match = re.search(ca_postal, text, re.IGNORECASE)
+    if match:
+        return match.group(0).upper()
+    
+    # Try US ZIP
+    match = re.search(us_zip, text)
+    if match:
+        return match.group(0)
+    
+    return None
+
+
+def extract_address_info(text):
+    """Extract address information from OCR text"""
+    lines = text.split('\n')
+    
+    # Look for common address patterns
+    address_data = {
+        'name': None,
+        'address': None,
+        'city': None,
+        'state': None,
+        'zip': None,
+    }
+    
+    # Extract ZIP code first
+    zip_code = extract_zip_code(text)
+    if zip_code:
+        address_data['zip'] = zip_code
+        
+        # Find the line with ZIP code
+        for i, line in enumerate(lines):
+            if zip_code in line:
+                # City and state are usually on the same line or line before
+                city_state_line = line.replace(zip_code, '').strip()
+                if city_state_line:
+                    parts = city_state_line.split(',')
+                    if len(parts) >= 2:
+                        address_data['city'] = parts[0].strip()
+                        address_data['state'] = parts[1].strip().split()[0]
+                    elif len(parts) == 1:
+                        # Might be "CITY STATE" format
+                        words = parts[0].strip().split()
+                        if len(words) >= 2:
+                            address_data['state'] = words[-1]
+                            address_data['city'] = ' '.join(words[:-1])
+                
+                # Address is usually 1-2 lines before city/state/zip
+                if i > 0:
+                    address_data['address'] = lines[i-1].strip()
+                if i > 1 and not address_data['name']:
+                    address_data['name'] = lines[i-2].strip()
+                break
+    
+    return address_data
+
+
+@app.route('/api/process-label', methods=['POST'])
+def process_label():
+    """Process uploaded label image and extract data using OCR"""
+    try:
+        if not OCR_AVAILABLE:
+            return jsonify({
+                'error': 'OCR not available',
+                'message': 'Install pytesseract and Tesseract OCR to enable label processing',
+                'instructions': [
+                    'pip install pytesseract',
+                    'Install Tesseract: https://github.com/tesseract-ocr/tesseract',
+                ]
+            }), 503
+        
+        # Get uploaded file
+        if 'label' not in request.files:
+            return jsonify({'error': 'No file uploaded'}), 400
+        
+        file = request.files['label']
+        if file.filename == '':
+            return jsonify({'error': 'No file selected'}), 400
+        
+        # Read image
+        image = Image.open(file.stream)
+        
+        # Perform OCR
+        text = pytesseract.image_to_string(image)
+        
+        # Extract tracking number and carrier
+        tracking_number, carrier = extract_tracking_number(text)
+        
+        # Extract address information
+        address_info = extract_address_info(text)
+        
+        # Extract weight (look for patterns like "70 LB" or "70LBS")
+        weight_match = re.search(r'(\d+\.?\d*)\s*LBS?', text, re.IGNORECASE)
+        weight = weight_match.group(1) if weight_match else None
+        
+        # Return extracted data
+        return jsonify({
+            'success': True,
+            'carrier': carrier,
+            'service': None,  # Service type is harder to extract reliably
+            'trackingNumber': tracking_number,
+            'shipToName': address_info.get('name'),
+            'shipToAddress': address_info.get('address'),
+            'shipToAddress2': None,
+            'shipToCity': address_info.get('city'),
+            'shipToState': address_info.get('state'),
+            'shipToZip': address_info.get('zip'),
+            'weight': weight,
+            'phone': None,  # Phone extraction can be added if needed
+            'extractedText': text,  # Include full text for debugging
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+

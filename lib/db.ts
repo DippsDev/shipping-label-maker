@@ -1,33 +1,22 @@
+import { sql } from "@vercel/postgres";
 import pg from "pg";
-import { awsCredentialsProvider } from "@vercel/functions/oidc";
-import { Signer } from "@aws-sdk/rds-signer";
 
 const { Pool } = pg;
 
 // Create PostgreSQL connection pool for direct queries
 export const createPool = () => {
-    if (!process.env.PGHOST || !process.env.AWS_REGION || !process.env.AWS_ROLE_ARN || !process.env.PGUSER || !process.env.PGPORT) {
-        return null;
+    // Use Vercel Postgres connection string if available
+    if (process.env.POSTGRES_URL) {
+        return new Pool({
+            connectionString: process.env.POSTGRES_URL,
+            ssl: { rejectUnauthorized: false },
+            max: 20,
+        });
     }
 
-    const signer = new Signer({
-        hostname: process.env.PGHOST,
-        port: Number(process.env.PGPORT),
-        username: process.env.PGUSER,
-        region: process.env.AWS_REGION,
-        credentials: awsCredentialsProvider({
-            roleArn: process.env.AWS_ROLE_ARN,
-            clientConfig: { region: process.env.AWS_REGION },
-        }),
-    });
-
-    return new Pool({
-        host: process.env.PGHOST,
-        user: process.env.PGUSER,
-        database: process.env.PGDATABASE || "postgres",
-        password: () => signer.getAuthToken(),
-        port: Number(process.env.PGPORT),
-        ssl: { rejectUnauthorized: false },
-        max: 20,
-    });
+    // Fallback to null (will use SQLite in development)
+    return null;
 };
+
+// Export Vercel's sql helper for convenience
+export { sql };
