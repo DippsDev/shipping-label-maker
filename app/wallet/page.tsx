@@ -63,13 +63,15 @@ export default function WalletPage() {
         ? session.user.name.split(" ").map(n => n[0]).join("").toUpperCase()
         : session.user?.email?.[0].toUpperCase() || "U";
 
-    const transactions = [
-        { id: 1, type: "debit", description: "UPS Ground Label", amount: -8.50, date: "2026-03-03", time: "10:30 AM", status: "completed" },
-        { id: 2, type: "credit", description: "Wallet Top-up", amount: 100.00, date: "2026-03-01", time: "2:15 PM", status: "completed" },
-        { id: 3, type: "debit", description: "FedEx Express Label", amount: -15.75, date: "2026-02-28", time: "4:45 PM", status: "completed" },
-        { id: 4, type: "debit", description: "USPS Priority Mail", amount: -6.25, date: "2026-02-27", time: "11:20 AM", status: "completed" },
-        { id: 5, type: "credit", description: "Wallet Top-up", amount: 50.00, date: "2026-02-25", time: "9:00 AM", status: "completed" },
-    ];
+    const transactions: Array<{
+        id: number;
+        type: string;
+        description: string;
+        amount: number;
+        date: string;
+        time: string;
+        status: string;
+    }> = [];
 
     return (
         <div className="flex min-h-screen bg-gray-50">
@@ -207,7 +209,7 @@ export default function WalletPage() {
                                 <p className="text-sm text-gray-600">Current Balance</p>
                                 <Wallet className="h-5 w-5 text-gray-400" />
                             </div>
-                            <p className="text-3xl font-semibold text-gray-900 mb-1">$100.00</p>
+                            <p className="text-3xl font-semibold text-gray-900 mb-1">$0.00</p>
                             <p className="text-xs text-gray-500">Available for labels</p>
                         </div>
 
@@ -217,7 +219,7 @@ export default function WalletPage() {
                                 <p className="text-sm text-gray-600">This Month</p>
                                 <TrendingUp className="h-5 w-5 text-gray-400" />
                             </div>
-                            <p className="text-3xl font-semibold text-gray-900 mb-1">$30.50</p>
+                            <p className="text-3xl font-semibold text-gray-900 mb-1">$0.00</p>
                             <p className="text-xs text-gray-500">Total spent</p>
                         </div>
 
@@ -227,7 +229,7 @@ export default function WalletPage() {
                                 <p className="text-sm text-gray-600">Transactions</p>
                                 <CreditCard className="h-5 w-5 text-gray-400" />
                             </div>
-                            <p className="text-3xl font-semibold text-gray-900 mb-1">5</p>
+                            <p className="text-3xl font-semibold text-gray-900 mb-1">0</p>
                             <p className="text-xs text-gray-500">This month</p>
                         </div>
                     </div>

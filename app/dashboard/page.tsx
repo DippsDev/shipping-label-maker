@@ -196,7 +196,7 @@ export default function Dashboard() {
                                 <h3 className="text-lg font-semibold text-gray-900">Total Labels</h3>
                                 <Tag className="h-8 w-8 text-gray-600" />
                             </div>
-                            <p className="text-3xl font-bold text-gray-900">1,234</p>
+                            <p className="text-3xl font-bold text-gray-900">0</p>
                             <p className="text-sm text-gray-600 mt-2">Generated this month</p>
                         </div>
 
@@ -205,7 +205,7 @@ export default function Dashboard() {
                                 <h3 className="text-lg font-semibold text-gray-900">Active Shipments</h3>
                                 <Package className="h-8 w-8 text-gray-600" />
                             </div>
-                            <p className="text-3xl font-bold text-gray-900">89</p>
+                            <p className="text-3xl font-bold text-gray-900">0</p>
                             <p className="text-sm text-gray-600 mt-2">In transit</p>
                         </div>
 
@@ -214,7 +214,7 @@ export default function Dashboard() {
                                 <h3 className="text-lg font-semibold text-gray-900">Saved Addresses</h3>
                                 <MapPin className="h-8 w-8 text-gray-600" />
                             </div>
-                            <p className="text-3xl font-bold text-gray-900">45</p>
+                            <p className="text-3xl font-bold text-gray-900">0</p>
                             <p className="text-sm text-gray-600 mt-2">Quick access</p>
                         </div>
                     </div>

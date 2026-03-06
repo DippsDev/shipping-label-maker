@@ -3,12 +3,22 @@
 import Link from "next/link";
 import { Package, LayoutDashboard, Tag, History, Wallet, MapPin, Search, Settings, Download, Printer, BookOpen, Menu, X } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
+import { useSession, signOut } from "@/lib/auth-client";
+import { useRouter } from "next/navigation";
 
 export default function CreateLabel() {
     const [selectedCarrier, setSelectedCarrier] = useState("UPS");
     const [showAccountMenu, setShowAccountMenu] = useState(false);
     const [showMobileMenu, setShowMobileMenu] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
+    const { data: session, isPending } = useSession();
+    const router = useRouter();
+
+    useEffect(() => {
+        if (!isPending && !session) {
+            router.push("/login");
+        }
+    }, [session, isPending, router]);
 
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
@@ -25,6 +35,41 @@ export default function CreateLabel() {
             document.removeEventListener("mousedown", handleClickOutside);
         };
     }, [showAccountMenu]);
+
+    const handleSignOut = async () => {
+        await signOut();
+        router.push("/login");
+    };
+
+    const getInitials = (name: string) => {
+        return name
+            .split(" ")
+            .map((n) => n[0])
+            .join("")
+            .toUpperCase()
+            .slice(0, 2);
+    };
+
+    const userInitials = session?.user?.name
+        ? getInitials(session.user.name)
+        : session?.user?.email
+            ? session.user.email.substring(0, 2).toUpperCase()
+            : "U";
+
+    if (isPending) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Loading...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (!session) {
+        return null;
+    }
 
     return (
         <div className="flex min-h-screen bg-gray-50">
@@ -116,48 +161,38 @@ export default function CreateLabel() {
                             className="flex items-center gap-2 md:gap-3 -ml-[3px] hover:bg-gray-50 px-2 md:px-3 py-2 rounded-lg transition-colors"
                         >
                             <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
-                                <span className="text-sm font-medium text-gray-900">PA</span>
+                                <span className="text-sm font-medium text-gray-900">{userInitials}</span>
                             </div>
-                            <span className="text-xs md:text-sm text-gray-600 hidden sm:inline">Platform Admin</span>
+                            <span className="text-xs md:text-sm text-gray-600 hidden sm:inline">
+                                {session.user?.name || session.user?.email}
+                            </span>
                         </button>
 
                         {showAccountMenu && (
                             <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
                                 <div className="px-4 py-2 border-b border-gray-200">
-                                    <p className="text-xs text-gray-500 uppercase font-medium">Switch Account</p>
+                                    <p className="text-xs text-gray-500 uppercase font-medium mb-2">Account</p>
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                                            <span className="text-sm font-medium text-gray-900">{userInitials}</span>
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-medium text-gray-900">
+                                                {session.user?.name || "User"}
+                                            </p>
+                                            <p className="text-xs text-gray-500">{session.user?.email}</p>
+                                        </div>
+                                    </div>
                                 </div>
-                                <button className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
-                                        <span className="text-sm font-medium text-gray-900">PA</span>
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-medium text-gray-900">Platform Admin</p>
-                                        <p className="text-xs text-gray-500">admin@labelapp.com</p>
-                                    </div>
-                                </button>
-                                <button className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                                        <span className="text-sm font-medium text-blue-900">JD</span>
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-medium text-gray-900">John Doe</p>
-                                        <p className="text-xs text-gray-500">john@example.com</p>
-                                    </div>
-                                </button>
-                                <button className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
-                                        <span className="text-sm font-medium text-green-900">SM</span>
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-medium text-gray-900">Sarah Miller</p>
-                                        <p className="text-xs text-gray-500">sarah@example.com</p>
-                                    </div>
-                                </button>
-                                <div className="border-t border-gray-200 mt-2 pt-2">
-                                    <button className="w-full px-4 py-2 text-left hover:bg-gray-50 text-sm text-gray-700">
-                                        Add Account
-                                    </button>
-                                    <button className="w-full px-4 py-2 text-left hover:bg-gray-50 text-sm text-red-600">
+                                <div className="border-t border-gray-200 pt-2">
+                                    <Link href="/settings" className="w-full px-4 py-2 text-left hover:bg-gray-50 text-sm text-gray-700 flex items-center gap-2">
+                                        <Settings className="h-4 w-4" />
+                                        Settings
+                                    </Link>
+                                    <button
+                                        onClick={handleSignOut}
+                                        className="w-full px-4 py-2 text-left hover:bg-gray-50 text-sm text-red-600"
+                                    >
                                         Sign Out
                                     </button>
                                 </div>
@@ -238,7 +273,7 @@ export default function CreateLabel() {
                                         <div className="flex gap-2">
                                             <input
                                                 type="text"
-                                                placeholder="1Z36475993JFU0733"
+                                                placeholder="Enter tracking number"
                                                 className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900"
                                             />
                                             <button className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
@@ -298,23 +333,23 @@ export default function CreateLabel() {
                                 <div className="grid md:grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-900 mb-2">Recipient Name <span className="text-red-500">*</span></label>
-                                        <input type="text" placeholder="HELOO" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900" />
+                                        <input type="text" placeholder="Enter recipient name" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900" />
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-900 mb-2">Phone (Optional)</label>
-                                        <input type="tel" placeholder="01230230" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900" />
+                                        <input type="tel" placeholder="Enter phone number" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900" />
                                     </div>
                                     <div className="md:col-span-2">
                                         <label className="block text-sm font-medium text-gray-900 mb-2">Address Line 1 <span className="text-red-500">*</span></label>
-                                        <input type="text" placeholder="WHDI R" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900" />
+                                        <input type="text" placeholder="Street address" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900" />
                                     </div>
                                     <div className="md:col-span-2">
                                         <label className="block text-sm font-medium text-gray-900 mb-2">Address Line 2 (Optional)</label>
-                                        <input type="text" placeholder="LASTOURS" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900" />
+                                        <input type="text" placeholder="Apartment, suite, etc." className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900" />
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-900 mb-2">City <span className="text-red-500">*</span></label>
-                                        <input type="text" placeholder="NAHKSD" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900" />
+                                        <input type="text" placeholder="Enter city" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900" />
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-900 mb-2">Country</label>
@@ -333,7 +368,7 @@ export default function CreateLabel() {
                                     <div>
                                         <label className="block text-sm font-medium text-gray-900 mb-2">ZIP/Postal Code <span className="text-red-500">*</span></label>
                                         <div className="flex gap-2">
-                                            <input type="text" placeholder="10001" className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900" />
+                                            <input type="text" placeholder="Enter ZIP code" className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900" />
                                             <button className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
                                                 📍
                                             </button>
@@ -355,12 +390,12 @@ export default function CreateLabel() {
                                     <div className="grid md:grid-cols-2 gap-4">
                                         <div>
                                             <label className="block text-sm font-medium text-gray-900 mb-2">UPS Zone (Optional)</label>
-                                            <input type="text" placeholder="959" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900" />
+                                            <input type="text" placeholder="Enter zone code" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900" />
                                             <p className="text-xs text-gray-500 mt-1">3-digit zone code from original label</p>
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-gray-900 mb-2">Sorting Code (Optional)</label>
-                                            <input type="text" placeholder="6-21" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900" />
+                                            <input type="text" placeholder="Enter sorting code" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900" />
                                             <p className="text-xs text-gray-500 mt-1">Sorting code from original label</p>
                                         </div>
                                     </div>
@@ -455,11 +490,11 @@ export default function CreateLabel() {
 
                                         <div className="text-xs space-y-1 text-gray-900">
                                             <p className="font-bold">SHIP TO:</p>
-                                            <p>HELOO</p>
-                                            <p>WHDI R</p>
-                                            <p>LASTOURS</p>
-                                            <p>NAHKSD, NE 10001</p>
-                                            <p>United States</p>
+                                            <p>Recipient Name</p>
+                                            <p>Address Line 1</p>
+                                            <p>Address Line 2</p>
+                                            <p>City, State ZIP</p>
+                                            <p>Country</p>
                                         </div>
                                     </div>
                                 </div>

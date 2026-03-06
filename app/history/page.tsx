@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { Package, LayoutDashboard, Tag, History, Wallet, MapPin, Search, Settings, Download, Eye, Printer, Filter, Calendar, Menu, X } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
+import { useSession, signOut } from "@/lib/auth-client";
+import { useRouter } from "next/navigation";
 
 interface Label {
     id: number;
@@ -28,6 +30,14 @@ export default function HistoryPage() {
     const [searchQuery, setSearchQuery] = useState("");
     const [dateFilter, setDateFilter] = useState<string>("all");
     const menuRef = useRef<HTMLDivElement>(null);
+    const { data: session, isPending } = useSession();
+    const router = useRouter();
+
+    useEffect(() => {
+        if (!isPending && !session) {
+            router.push("/login");
+        }
+    }, [session, isPending, router]);
 
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
@@ -45,136 +55,42 @@ export default function HistoryPage() {
         };
     }, [showAccountMenu]);
 
-    const labels: Label[] = [
-        {
-            id: 1,
-            trackingNumber: "1Z36475993JFU0733",
-            carrier: "UPS",
-            service: "UPS Ground",
-            recipientName: "John Smith",
-            recipientAddress: "123 Main Street, Apt 4B",
-            recipientCity: "New York",
-            recipientState: "NY",
-            recipientZip: "10001",
-            weight: 70,
-            cost: 8.50,
-            status: "completed",
-            createdDate: "2026-03-03",
-            createdTime: "10:30 AM"
-        },
-        {
-            id: 2,
-            trackingNumber: "794612345678",
-            carrier: "FedEx",
-            service: "FedEx Express",
-            recipientName: "Sarah Johnson",
-            recipientAddress: "456 Oak Avenue",
-            recipientCity: "Los Angeles",
-            recipientState: "CA",
-            recipientZip: "90001",
-            weight: 45,
-            cost: 15.75,
-            status: "completed",
-            createdDate: "2026-03-01",
-            createdTime: "2:15 PM"
-        },
-        {
-            id: 3,
-            trackingNumber: "9400111899562345678901",
-            carrier: "USPS",
-            service: "USPS Priority Mail",
-            recipientName: "Mike Wilson",
-            recipientAddress: "789 Pine Road",
-            recipientCity: "Chicago",
-            recipientState: "IL",
-            recipientZip: "60601",
-            weight: 25,
-            cost: 6.25,
-            status: "completed",
-            createdDate: "2026-02-28",
-            createdTime: "4:45 PM"
-        },
-        {
-            id: 4,
-            trackingNumber: "1Z98765432ABC1234",
-            carrier: "UPS",
-            service: "UPS Next Day Air",
-            recipientName: "Emily Davis",
-            recipientAddress: "321 Elm Street, Suite 200",
-            recipientCity: "Houston",
-            recipientState: "TX",
-            recipientZip: "77001",
-            weight: 35,
-            cost: 25.00,
-            status: "completed",
-            createdDate: "2026-02-27",
-            createdTime: "11:20 AM"
-        },
-        {
-            id: 5,
-            trackingNumber: "HELOO123456",
-            carrier: "UPS",
-            service: "UPS Ground",
-            recipientName: "HELOO",
-            recipientAddress: "WHDI R, LASTOURS",
-            recipientCity: "NAHKSD",
-            recipientState: "NE",
-            recipientZip: "10001",
-            weight: 70,
-            cost: 8.50,
-            status: "completed",
-            createdDate: "2026-02-25",
-            createdTime: "9:00 AM"
-        },
-        {
-            id: 6,
-            trackingNumber: "329012345678",
-            carrier: "FedEx",
-            service: "FedEx 2Day",
-            recipientName: "Robert Brown",
-            recipientAddress: "555 Maple Drive",
-            recipientCity: "Phoenix",
-            recipientState: "AZ",
-            recipientZip: "85001",
-            weight: 50,
-            cost: 12.50,
-            status: "completed",
-            createdDate: "2026-02-24",
-            createdTime: "3:30 PM"
-        },
-        {
-            id: 7,
-            trackingNumber: "9400111899562345678902",
-            carrier: "USPS",
-            service: "USPS First Class",
-            recipientName: "Lisa Anderson",
-            recipientAddress: "888 Cedar Lane",
-            recipientCity: "Seattle",
-            recipientState: "WA",
-            recipientZip: "98101",
-            weight: 15,
-            cost: 4.50,
-            status: "completed",
-            createdDate: "2026-02-22",
-            createdTime: "1:15 PM"
-        },
-        {
-            id: 8,
-            trackingNumber: "329012345679",
-            carrier: "Purolator",
-            service: "Purolator Ground",
-            recipientName: "David Martinez",
-            recipientAddress: "777 Birch Street",
-            recipientCity: "Toronto",
-            recipientState: "ON",
-            recipientZip: "M5H 2N2",
-            weight: 60,
-            cost: 18.00,
-            status: "completed",
-            createdDate: "2026-02-20",
-            createdTime: "10:45 AM"
-        }
-    ];
+    const handleSignOut = async () => {
+        await signOut();
+        router.push("/login");
+    };
+
+    const getInitials = (name: string) => {
+        return name
+            .split(" ")
+            .map((n) => n[0])
+            .join("")
+            .toUpperCase()
+            .slice(0, 2);
+    };
+
+    const userInitials = session?.user?.name
+        ? getInitials(session.user.name)
+        : session?.user?.email
+            ? session.user.email.substring(0, 2).toUpperCase()
+            : "U";
+
+    if (isPending) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Loading...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (!session) {
+        return null;
+    }
+
+    const labels: Label[] = [];
 
     const filteredLabels = labels.filter(label => {
         const matchesCarrier = selectedCarrier === "all" || label.carrier === selectedCarrier;
@@ -291,48 +207,38 @@ export default function HistoryPage() {
                             className="flex items-center gap-3 -ml-[3px] hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors"
                         >
                             <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
-                                <span className="text-sm font-medium text-gray-900">PA</span>
+                                <span className="text-sm font-medium text-gray-900">{userInitials}</span>
                             </div>
-                            <span className="text-xs md:text-sm text-gray-600 hidden sm:inline">Platform Admin</span>
+                            <span className="text-xs md:text-sm text-gray-600 hidden sm:inline">
+                                {session.user?.name || session.user?.email}
+                            </span>
                         </button>
 
                         {showAccountMenu && (
                             <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
                                 <div className="px-4 py-2 border-b border-gray-200">
-                                    <p className="text-xs text-gray-500 uppercase font-medium">Switch Account</p>
+                                    <p className="text-xs text-gray-500 uppercase font-medium mb-2">Account</p>
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                                            <span className="text-sm font-medium text-gray-900">{userInitials}</span>
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-medium text-gray-900">
+                                                {session.user?.name || "User"}
+                                            </p>
+                                            <p className="text-xs text-gray-500">{session.user?.email}</p>
+                                        </div>
+                                    </div>
                                 </div>
-                                <button className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
-                                        <span className="text-sm font-medium text-gray-900">PA</span>
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-medium text-gray-900">Platform Admin</p>
-                                        <p className="text-xs text-gray-500">admin@labelapp.com</p>
-                                    </div>
-                                </button>
-                                <button className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                                        <span className="text-sm font-medium text-blue-900">JD</span>
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-medium text-gray-900">John Doe</p>
-                                        <p className="text-xs text-gray-500">john@example.com</p>
-                                    </div>
-                                </button>
-                                <button className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
-                                        <span className="text-sm font-medium text-green-900">SM</span>
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-medium text-gray-900">Sarah Miller</p>
-                                        <p className="text-xs text-gray-500">sarah@example.com</p>
-                                    </div>
-                                </button>
-                                <div className="border-t border-gray-200 mt-2 pt-2">
-                                    <button className="w-full px-4 py-2 text-left hover:bg-gray-50 text-sm text-gray-700">
-                                        Add Account
-                                    </button>
-                                    <button className="w-full px-4 py-2 text-left hover:bg-gray-50 text-sm text-red-600">
+                                <div className="border-t border-gray-200 pt-2">
+                                    <Link href="/settings" className="w-full px-4 py-2 text-left hover:bg-gray-50 text-sm text-gray-700 flex items-center gap-2">
+                                        <Settings className="h-4 w-4" />
+                                        Settings
+                                    </Link>
+                                    <button
+                                        onClick={handleSignOut}
+                                        className="w-full px-4 py-2 text-left hover:bg-gray-50 text-sm text-red-600"
+                                    >
                                         Sign Out
                                     </button>
                                 </div>
@@ -486,8 +392,8 @@ export default function HistoryPage() {
                         {filteredLabels.length === 0 && (
                             <div className="p-12 text-center">
                                 <History className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                                <p className="text-gray-600">No labels found</p>
-                                <p className="text-sm text-gray-500 mt-1">Try adjusting your search or filters</p>
+                                <p className="text-gray-600">No labels yet</p>
+                                <p className="text-sm text-gray-500 mt-1">Create your first shipping label to get started</p>
                             </div>
                         )}
                     </div>

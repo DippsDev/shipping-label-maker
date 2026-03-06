@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { Package, LayoutDashboard, Tag, History, Wallet, MapPin, Search, Settings, Plus, Edit, Trash2, Star, Clock, Menu, X } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
+import { useSession, signOut } from "@/lib/auth-client";
+import { useRouter } from "next/navigation";
 
 interface Address {
-    id: number;
+    id: string;
     name: string;
     phone?: string;
     addressLine1: string;
@@ -25,7 +27,21 @@ export default function AddressesPage() {
     const [showAddModal, setShowAddModal] = useState(false);
     const [activeTab, setActiveTab] = useState<"all" | "saved" | "recent">("all");
     const [searchQuery, setSearchQuery] = useState("");
+    const [addresses, setAddresses] = useState<Address[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [formData, setFormData] = useState({
+        name: "",
+        phone: "",
+        addressLine1: "",
+        addressLine2: "",
+        city: "",
+        state: "",
+        zipCode: "",
+        country: "United States"
+    });
     const menuRef = useRef<HTMLDivElement>(null);
+    const { data: session, isPending } = useSession();
+    const router = useRouter();
 
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
@@ -43,75 +59,55 @@ export default function AddressesPage() {
         };
     }, [showAccountMenu]);
 
-    const addresses: Address[] = [
-        {
-            id: 1,
-            name: "John Smith",
-            phone: "555-0123",
-            addressLine1: "123 Main Street",
-            addressLine2: "Apt 4B",
-            city: "New York",
-            state: "NY",
-            zipCode: "10001",
-            country: "United States",
-            isSaved: true,
-            lastUsed: "2026-03-03",
-            usageCount: 15
-        },
-        {
-            id: 2,
-            name: "HELOO",
-            phone: "01230230",
-            addressLine1: "WHDI R",
-            addressLine2: "LASTOURS",
-            city: "NAHKSD",
-            state: "NE",
-            zipCode: "10001",
-            country: "United States",
-            isSaved: false,
-            lastUsed: "2026-03-03",
-            usageCount: 1
-        },
-        {
-            id: 3,
-            name: "Sarah Johnson",
-            phone: "555-0456",
-            addressLine1: "456 Oak Avenue",
-            city: "Los Angeles",
-            state: "CA",
-            zipCode: "90001",
-            country: "United States",
-            isSaved: true,
-            lastUsed: "2026-03-01",
-            usageCount: 8
-        },
-        {
-            id: 4,
-            name: "Mike Wilson",
-            addressLine1: "789 Pine Road",
-            city: "Chicago",
-            state: "IL",
-            zipCode: "60601",
-            country: "United States",
-            isSaved: false,
-            lastUsed: "2026-02-28",
-            usageCount: 3
-        },
-        {
-            id: 5,
-            name: "Emily Davis",
-            phone: "555-0789",
-            addressLine1: "321 Elm Street",
-            addressLine2: "Suite 200",
-            city: "Houston",
-            state: "TX",
-            zipCode: "77001",
-            country: "United States",
-            isSaved: true,
-            lastUsed: "2026-02-25",
-            usageCount: 12
+    useEffect(() => {
+        if (!isPending && !session) {
+            router.push("/login");
         }
-    ];
+    }, [session, isPending, router]);
+
+    useEffect(() => {
+        if (session) {
+            fetchAddresses();
+        }
+    }, [session]);
+
+    const fetchAddresses = async () => {
+        try {
+            const response = await fetch("/api/addresses");
+            if (response.ok) {
+                const data = await response.json();
+                setAddresses(data);
+            }
+        } catch (error) {
+            console.error("Failed to fetch addresses:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleSignOut = async () => {
+        await signOut();
+        router.push("/login");
+    };
+
+    if (isPending || isLoading) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Loading...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (!session) {
+        return null;
+    }
+
+    const userInitials = session.user?.name
+        ? session.user.name.split(" ").map(n => n[0]).join("").toUpperCase()
+        : session.user?.email?.[0].toUpperCase() || "U";
 
     const filteredAddresses = addresses.filter(address => {
         const matchesSearch = searchQuery === "" ||
@@ -125,14 +121,86 @@ export default function AddressesPage() {
         return matchesSearch;
     });
 
-    const toggleSaveAddress = (id: number) => {
-        // In a real app, this would update the backend
-        console.log("Toggle save for address:", id);
+    const handleAddAddress = async () => {
+        try {
+            console.log("Submitting address:", formData);
+            const response = await fetch("/api/addresses", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ ...formData, isSaved: true })
+            });
+
+            console.log("Response status:", response.status);
+            console.log("Response headers:", response.headers.get("content-type"));
+
+            const text = await response.text();
+            console.log("Response text:", text);
+
+            let data;
+            try {
+                data = text ? JSON.parse(text) : {};
+            } catch (e) {
+                console.error("Failed to parse JSON:", e);
+                alert("Server returned invalid response. Check console for details.");
+                return;
+            }
+
+            if (response.ok) {
+                await fetchAddresses();
+                setShowAddModal(false);
+                setFormData({
+                    name: "",
+                    phone: "",
+                    addressLine1: "",
+                    addressLine2: "",
+                    city: "",
+                    state: "",
+                    zipCode: "",
+                    country: "United States"
+                });
+                alert("Address saved successfully!");
+            } else {
+                alert(`Failed to save address: ${data.error || "Unknown error"}`);
+            }
+        } catch (error) {
+            console.error("Failed to add address:", error);
+            alert("Failed to save address. Check console for details.");
+        }
     };
 
-    const deleteAddress = (id: number) => {
-        // In a real app, this would delete from backend
-        console.log("Delete address:", id);
+    const toggleSaveAddress = async (id: string) => {
+        try {
+            const address = addresses.find(a => a.id === id);
+            if (!address) return;
+
+            const response = await fetch(`/api/addresses/${id}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ isSaved: !address.isSaved })
+            });
+
+            if (response.ok) {
+                await fetchAddresses();
+            }
+        } catch (error) {
+            console.error("Failed to toggle save address:", error);
+        }
+    };
+
+    const deleteAddress = async (id: string) => {
+        if (!confirm("Are you sure you want to delete this address?")) return;
+
+        try {
+            const response = await fetch(`/api/addresses/${id}`, {
+                method: "DELETE"
+            });
+
+            if (response.ok) {
+                await fetchAddresses();
+            }
+        } catch (error) {
+            console.error("Failed to delete address:", error);
+        }
     };
 
     return (
@@ -225,48 +293,34 @@ export default function AddressesPage() {
                             className="flex items-center gap-3 -ml-[3px] hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors"
                         >
                             <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
-                                <span className="text-sm font-medium text-gray-900">PA</span>
+                                <span className="text-sm font-medium text-gray-900">{userInitials}</span>
                             </div>
-                            <span className="text-xs md:text-sm text-gray-600 hidden sm:inline">Platform Admin</span>
+                            <span className="text-xs md:text-sm text-gray-600 hidden sm:inline">{session.user?.name || session.user?.email}</span>
                         </button>
 
                         {showAccountMenu && (
                             <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
-                                <div className="px-4 py-2 border-b border-gray-200">
-                                    <p className="text-xs text-gray-500 uppercase font-medium">Switch Account</p>
+                                <div className="px-4 py-3 border-b border-gray-200">
+                                    <p className="text-xs text-gray-500 uppercase font-medium mb-2">Account</p>
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                                            <span className="text-sm font-medium text-gray-900">{userInitials}</span>
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-medium text-gray-900">{session.user?.name || "User"}</p>
+                                            <p className="text-xs text-gray-500">{session.user?.email}</p>
+                                        </div>
+                                    </div>
                                 </div>
-                                <button className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
-                                        <span className="text-sm font-medium text-gray-900">PA</span>
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-medium text-gray-900">Platform Admin</p>
-                                        <p className="text-xs text-gray-500">admin@labelapp.com</p>
-                                    </div>
-                                </button>
-                                <button className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                                        <span className="text-sm font-medium text-blue-900">JD</span>
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-medium text-gray-900">John Doe</p>
-                                        <p className="text-xs text-gray-500">john@example.com</p>
-                                    </div>
-                                </button>
-                                <button className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
-                                        <span className="text-sm font-medium text-green-900">SM</span>
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-medium text-gray-900">Sarah Miller</p>
-                                        <p className="text-xs text-gray-500">sarah@example.com</p>
-                                    </div>
-                                </button>
-                                <div className="border-t border-gray-200 mt-2 pt-2">
-                                    <button className="w-full px-4 py-2 text-left hover:bg-gray-50 text-sm text-gray-700">
-                                        Add Account
-                                    </button>
-                                    <button className="w-full px-4 py-2 text-left hover:bg-gray-50 text-sm text-red-600">
+                                <div className="border-t border-gray-200 pt-2">
+                                    <Link href="/settings" className="w-full px-4 py-2 text-left hover:bg-gray-50 text-sm text-gray-700 flex items-center gap-2">
+                                        <Settings className="h-4 w-4" />
+                                        Settings
+                                    </Link>
+                                    <button
+                                        onClick={handleSignOut}
+                                        className="w-full px-4 py-2 text-left hover:bg-gray-50 text-sm text-red-600"
+                                    >
                                         Sign Out
                                     </button>
                                 </div>
@@ -380,8 +434,8 @@ export default function AddressesPage() {
                             {filteredAddresses.length === 0 ? (
                                 <div className="text-center py-12">
                                     <MapPin className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                                    <p className="text-gray-600">No addresses found</p>
-                                    <p className="text-sm text-gray-500 mt-1">Try adjusting your search or filters</p>
+                                    <p className="text-gray-600">No addresses yet</p>
+                                    <p className="text-sm text-gray-500 mt-1">Add your first address to get started</p>
                                 </div>
                             ) : (
                                 <div className="grid md:grid-cols-2 gap-4">
@@ -450,32 +504,61 @@ export default function AddressesPage() {
                             <div className="grid md:grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-900 mb-2">Recipient Name <span className="text-red-500">*</span></label>
-                                    <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900" />
+                                    <input
+                                        type="text"
+                                        value={formData.name}
+                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900"
+                                    />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-900 mb-2">Phone (Optional)</label>
-                                    <input type="tel" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900" />
+                                    <input
+                                        type="tel"
+                                        value={formData.phone}
+                                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900"
+                                    />
                                 </div>
                             </div>
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-900 mb-2">Address Line 1 <span className="text-red-500">*</span></label>
-                                <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900" />
+                                <input
+                                    type="text"
+                                    value={formData.addressLine1}
+                                    onChange={(e) => setFormData({ ...formData, addressLine1: e.target.value })}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900"
+                                />
                             </div>
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-900 mb-2">Address Line 2 (Optional)</label>
-                                <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900" />
+                                <input
+                                    type="text"
+                                    value={formData.addressLine2}
+                                    onChange={(e) => setFormData({ ...formData, addressLine2: e.target.value })}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900"
+                                />
                             </div>
 
                             <div className="grid md:grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-900 mb-2">City <span className="text-red-500">*</span></label>
-                                    <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900" />
+                                    <input
+                                        type="text"
+                                        value={formData.city}
+                                        onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900"
+                                    />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-900 mb-2">Country <span className="text-red-500">*</span></label>
-                                    <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900">
+                                    <select
+                                        value={formData.country}
+                                        onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900"
+                                    >
                                         <option>United States</option>
                                         <option>Canada</option>
                                         <option>Mexico</option>
@@ -486,11 +569,21 @@ export default function AddressesPage() {
                             <div className="grid md:grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-900 mb-2">State/Province <span className="text-red-500">*</span></label>
-                                    <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900" />
+                                    <input
+                                        type="text"
+                                        value={formData.state}
+                                        onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900"
+                                    />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-900 mb-2">ZIP/Postal Code <span className="text-red-500">*</span></label>
-                                    <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900" />
+                                    <input
+                                        type="text"
+                                        value={formData.zipCode}
+                                        onChange={(e) => setFormData({ ...formData, zipCode: e.target.value })}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900"
+                                    />
                                 </div>
                             </div>
                         </div>
@@ -502,7 +595,11 @@ export default function AddressesPage() {
                             >
                                 Cancel
                             </button>
-                            <button className="flex-1 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800">
+                            <button
+                                onClick={handleAddAddress}
+                                disabled={!formData.name || !formData.addressLine1 || !formData.city || !formData.state || !formData.zipCode}
+                                className="flex-1 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
                                 Save Address
                             </button>
                         </div>
