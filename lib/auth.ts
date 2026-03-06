@@ -15,10 +15,10 @@ const getDatabase = () => {
             connectionString: process.env.POSTGRES_URL,
             ssl: { rejectUnauthorized: false },
             max: 20,
-        });
+        } as any);
 
         const db = new Kysely({
-            dialect: new PostgresDialect({ pool: pool as any }),
+            dialect: new PostgresDialect({ pool }),
         });
         return kyselyAdapter(db);
     } else {

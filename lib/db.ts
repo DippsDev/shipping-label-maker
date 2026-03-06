@@ -11,7 +11,7 @@ export const createPool = () => {
             connectionString: process.env.POSTGRES_URL,
             ssl: { rejectUnauthorized: false },
             max: 20,
-        });
+        } as any);
     }
 
     // Fallback to null (will use SQLite in development)
