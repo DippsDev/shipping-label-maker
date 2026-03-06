@@ -8,11 +8,52 @@ import { useRouter } from "next/navigation";
 
 export default function CreateLabel() {
     const [selectedCarrier, setSelectedCarrier] = useState("UPS");
+    const [selectedService, setSelectedService] = useState("");
     const [showAccountMenu, setShowAccountMenu] = useState(false);
     const [showMobileMenu, setShowMobileMenu] = useState(false);
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [generationError, setGenerationError] = useState("");
+    const [generationSuccess, setGenerationSuccess] = useState("");
+
+    // Form data
+    const [trackingNumber, setTrackingNumber] = useState("");
+    const [shipToName, setShipToName] = useState("");
+    const [shipToAddress, setShipToAddress] = useState("");
+    const [shipToAddress2, setShipToAddress2] = useState("");
+    const [shipToCity, setShipToCity] = useState("");
+    const [shipToState, setShipToState] = useState("");
+    const [shipToZip, setShipToZip] = useState("");
+    const [weight, setWeight] = useState("70");
+    const [fileName, setFileName] = useState("");
+    const [phone, setPhone] = useState("");
+    const [country, setCountry] = useState("United States");
+    const [length, setLength] = useState("19");
+    const [width, setWidth] = useState("17");
+    const [height, setHeight] = useState("13");
+    const [upsZone, setUpsZone] = useState("");
+    const [sortingCode, setSortingCode] = useState("");
+
     const menuRef = useRef<HTMLDivElement>(null);
     const { data: session, isPending } = useSession();
     const router = useRouter();
+
+    // Carrier-specific service options
+    const serviceOptions: Record<string, string[]> = {
+        "UPS": ["UPS Ground", "UPS Next Day Air", "UPS 2nd Day Air", "UPS 3 Day Select", "UPS Ground Return Service"],
+        "FedEx": ["FedEx Ground", "FedEx Home Delivery", "FedEx Express Saver", "FedEx 2Day", "FedEx Standard Overnight", "FedEx Priority Overnight", "Smart Post", "Ground Return Service"],
+        "USPS": ["Priority Mail", "Priority Mail Express", "First Class Package", "Parcel Select", "Ground Advantage", "Priority Mail Return", "First Class Package Return", "UPS Mail Innovations", "Smart Label / Pitney Bowes"],
+        "Purolator": ["Purolator Ground", "Purolator Express"],
+        "Canada Post": ["Regular Parcel", "Expedited Parcel", "Regular Parcel Return", "Expedited Parcel Return"]
+    };
+
+    // Helper functions to determine which fields to show
+    const isCanadianCarrier = selectedCarrier === "Purolator" || selectedCarrier === "Canada Post";
+    const showWeight = selectedCarrier === "UPS" || selectedCarrier === "FedEx" || selectedCarrier === "Purolator";
+    const showUPSFields = selectedCarrier === "UPS";
+    const showDimensions = selectedCarrier === "USPS" && (selectedService === "Priority Mail" || selectedService === "Priority Mail Express");
+    const showVCode = selectedCarrier === "USPS" && selectedService === "UPS Mail Innovations";
+    const showMCode = selectedCarrier === "USPS" && selectedService === "Smart Label / Pitney Bowes";
+    const showSortingCode = selectedCarrier === "UPS" || selectedCarrier === "Purolator";
 
     useEffect(() => {
         if (!isPending && !session) {
@@ -48,6 +89,97 @@ export default function CreateLabel() {
             .join("")
             .toUpperCase()
             .slice(0, 2);
+    };
+
+    const handleGenerateLabel = async () => {
+        setGenerationError("");
+        setGenerationSuccess("");
+
+        // Validate required fields
+        if (!selectedService) {
+            setGenerationError("Please select a service type");
+            return;
+        }
+        if (!trackingNumber) {
+            setGenerationError("Please enter a tracking number");
+            return;
+        }
+        if (!shipToName) {
+            setGenerationError("Please enter recipient name");
+            return;
+        }
+        if (!shipToAddress) {
+            setGenerationError("Please enter recipient address");
+            return;
+        }
+        if (!shipToCity) {
+            setGenerationError("Please enter recipient city");
+            return;
+        }
+        if (!shipToZip) {
+            setGenerationError("Please enter ZIP/postal code");
+            return;
+        }
+
+        setIsGenerating(true);
+
+        try {
+            const labelData = {
+                carrier: selectedCarrier,
+                service: selectedService,
+                trackingNumber,
+                shipToName,
+                shipToAddress,
+                shipToAddress2,
+                shipToCity,
+                shipToState: shipToState || shipToZip.substring(0, 2), // For Canadian carriers
+                shipToProvince: shipToState || shipToZip.substring(0, 2),
+                shipToZip,
+                shipToPostal: shipToZip,
+                weight,
+                fileName: fileName || `label_${trackingNumber}`,
+            };
+
+            const response = await fetch('/api/generate-label', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(labelData),
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Failed to generate label');
+            }
+
+            // Check if response is JSON (setup instructions) or image
+            const contentType = response.headers.get('content-type');
+
+            if (contentType?.includes('application/json')) {
+                const result = await response.json();
+                setGenerationError(result.message || 'Label generation not yet configured. See console for setup instructions.');
+                console.log('Setup Instructions:', result.instructions);
+            } else {
+                // It's an image - download it
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `label_${trackingNumber}.png`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+
+                setGenerationSuccess("Label generated successfully!");
+            }
+        } catch (error) {
+            console.error('Label generation error:', error);
+            setGenerationError(error instanceof Error ? error.message : 'Failed to generate label');
+        } finally {
+            setIsGenerating(false);
+        }
     };
 
     const userInitials = session?.user?.name
@@ -262,10 +394,15 @@ export default function CreateLabel() {
                                 <div className="grid md:grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-900 mb-2">Service Type <span className="text-red-500">*</span></label>
-                                        <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900">
-                                            <option>UPS Ground</option>
-                                            <option>UPS Next Day Air</option>
-                                            <option>UPS 2nd Day Air</option>
+                                        <select
+                                            value={selectedService}
+                                            onChange={(e) => setSelectedService(e.target.value)}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900"
+                                        >
+                                            <option value="">Select a service...</option>
+                                            {serviceOptions[selectedCarrier]?.map((service) => (
+                                                <option key={service} value={service}>{service}</option>
+                                            ))}
                                         </select>
                                     </div>
                                     <div>
@@ -274,9 +411,14 @@ export default function CreateLabel() {
                                             <input
                                                 type="text"
                                                 placeholder="Enter tracking number"
+                                                value={trackingNumber}
+                                                onChange={(e) => setTrackingNumber(e.target.value)}
                                                 className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900"
                                             />
-                                            <button className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+                                            <button
+                                                onClick={() => setTrackingNumber("")}
+                                                className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                                            >
                                                 ✕
                                             </button>
                                         </div>
@@ -299,22 +441,42 @@ export default function CreateLabel() {
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-900 mb-2">Weight (lbs)</label>
-                                        <input type="number" defaultValue="70" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900" />
+                                        <input
+                                            type="number"
+                                            value={weight}
+                                            onChange={(e) => setWeight(e.target.value)}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900"
+                                        />
                                     </div>
                                 </div>
 
                                 <div className="grid grid-cols-3 gap-4">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-900 mb-2">Length (in)</label>
-                                        <input type="number" defaultValue="19" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900" />
+                                        <input
+                                            type="number"
+                                            value={length}
+                                            onChange={(e) => setLength(e.target.value)}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900"
+                                        />
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-900 mb-2">Width (in)</label>
-                                        <input type="number" defaultValue="17" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900" />
+                                        <input
+                                            type="number"
+                                            value={width}
+                                            onChange={(e) => setWidth(e.target.value)}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900"
+                                        />
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-900 mb-2">Height (in)</label>
-                                        <input type="number" defaultValue="13" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900" />
+                                        <input
+                                            type="number"
+                                            value={height}
+                                            onChange={(e) => setHeight(e.target.value)}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900"
+                                        />
                                     </div>
                                 </div>
                             </div>
@@ -333,27 +495,61 @@ export default function CreateLabel() {
                                 <div className="grid md:grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-900 mb-2">Recipient Name <span className="text-red-500">*</span></label>
-                                        <input type="text" placeholder="Enter recipient name" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900" />
+                                        <input
+                                            type="text"
+                                            placeholder="Enter recipient name"
+                                            value={shipToName}
+                                            onChange={(e) => setShipToName(e.target.value)}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900"
+                                        />
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-900 mb-2">Phone (Optional)</label>
-                                        <input type="tel" placeholder="Enter phone number" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900" />
+                                        <input
+                                            type="tel"
+                                            placeholder="Enter phone number"
+                                            value={phone}
+                                            onChange={(e) => setPhone(e.target.value)}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900"
+                                        />
                                     </div>
                                     <div className="md:col-span-2">
                                         <label className="block text-sm font-medium text-gray-900 mb-2">Address Line 1 <span className="text-red-500">*</span></label>
-                                        <input type="text" placeholder="Street address" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900" />
+                                        <input
+                                            type="text"
+                                            placeholder="Street address"
+                                            value={shipToAddress}
+                                            onChange={(e) => setShipToAddress(e.target.value)}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900"
+                                        />
                                     </div>
                                     <div className="md:col-span-2">
                                         <label className="block text-sm font-medium text-gray-900 mb-2">Address Line 2 (Optional)</label>
-                                        <input type="text" placeholder="Apartment, suite, etc." className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900" />
+                                        <input
+                                            type="text"
+                                            placeholder="Apartment, suite, etc."
+                                            value={shipToAddress2}
+                                            onChange={(e) => setShipToAddress2(e.target.value)}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900"
+                                        />
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-900 mb-2">City <span className="text-red-500">*</span></label>
-                                        <input type="text" placeholder="Enter city" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900" />
+                                        <input
+                                            type="text"
+                                            placeholder="Enter city"
+                                            value={shipToCity}
+                                            onChange={(e) => setShipToCity(e.target.value)}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900"
+                                        />
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-900 mb-2">Country</label>
-                                        <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900">
+                                        <select
+                                            value={country}
+                                            onChange={(e) => setCountry(e.target.value)}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900"
+                                        >
                                             <option>United States</option>
                                             <option>Canada</option>
                                             <option>Mexico</option>
@@ -361,14 +557,25 @@ export default function CreateLabel() {
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-900 mb-2">State/Province (Optional)</label>
-                                        <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900">
+                                        <select
+                                            value={shipToState}
+                                            onChange={(e) => setShipToState(e.target.value)}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900"
+                                        >
+                                            <option value="">Select state...</option>
                                             <option>NE</option>
                                         </select>
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-900 mb-2">ZIP/Postal Code <span className="text-red-500">*</span></label>
                                         <div className="flex gap-2">
-                                            <input type="text" placeholder="Enter ZIP code" className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900" />
+                                            <input
+                                                type="text"
+                                                placeholder="Enter ZIP code"
+                                                value={shipToZip}
+                                                onChange={(e) => setShipToZip(e.target.value)}
+                                                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900"
+                                            />
                                             <button className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
                                                 📍
                                             </button>
@@ -390,19 +597,37 @@ export default function CreateLabel() {
                                     <div className="grid md:grid-cols-2 gap-4">
                                         <div>
                                             <label className="block text-sm font-medium text-gray-900 mb-2">UPS Zone (Optional)</label>
-                                            <input type="text" placeholder="Enter zone code" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900" />
+                                            <input
+                                                type="text"
+                                                placeholder="Enter zone code"
+                                                value={upsZone}
+                                                onChange={(e) => setUpsZone(e.target.value)}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900"
+                                            />
                                             <p className="text-xs text-gray-500 mt-1">3-digit zone code from original label</p>
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-gray-900 mb-2">Sorting Code (Optional)</label>
-                                            <input type="text" placeholder="Enter sorting code" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900" />
+                                            <input
+                                                type="text"
+                                                placeholder="Enter sorting code"
+                                                value={sortingCode}
+                                                onChange={(e) => setSortingCode(e.target.value)}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900"
+                                            />
                                             <p className="text-xs text-gray-500 mt-1">Sorting code from original label</p>
                                         </div>
                                     </div>
 
                                     <div>
                                         <label className="block text-sm font-medium text-gray-900 mb-2">Output File Name (Optional)</label>
-                                        <input type="text" placeholder="Leave blank for auto-generated name" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900" />
+                                        <input
+                                            type="text"
+                                            placeholder="Leave blank for auto-generated name"
+                                            value={fileName}
+                                            onChange={(e) => setFileName(e.target.value)}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900"
+                                        />
                                         <p className="text-xs text-gray-500 mt-1">Custom filename for the generated label</p>
                                     </div>
 
@@ -463,13 +688,33 @@ export default function CreateLabel() {
                                     <div className="bg-white p-4 rounded shadow-sm">
                                         <div className="flex items-start justify-between mb-3">
                                             <div className="text-xs text-gray-900">
-                                                <p className="font-bold">UPS</p>
-                                                <p>UPS GROUND</p>
+                                                <p className="font-bold">{selectedCarrier.toUpperCase()}</p>
+                                                <p>{selectedService || "Select a service"}</p>
                                             </div>
-                                            <div className="text-right text-xs text-gray-900">
-                                                <p>KY-6-21</p>
-                                                <p className="font-bold">959</p>
-                                            </div>
+                                            {selectedCarrier === "UPS" && (
+                                                <div className="text-right text-xs text-gray-900">
+                                                    <p>KY-6-21</p>
+                                                    <p className="font-bold">959</p>
+                                                </div>
+                                            )}
+                                            {selectedCarrier === "FedEx" && (
+                                                <div className="text-right text-xs text-gray-900">
+                                                    <p className="font-bold">PRIORITY</p>
+                                                    <p>OVERNIGHT</p>
+                                                </div>
+                                            )}
+                                            {selectedCarrier === "USPS" && (
+                                                <div className="text-right text-xs text-gray-900">
+                                                    <p className="font-bold">USPS</p>
+                                                    <p>PRIORITY</p>
+                                                </div>
+                                            )}
+                                            {(selectedCarrier === "Purolator" || selectedCarrier === "Canada Post") && (
+                                                <div className="text-right text-xs text-gray-900">
+                                                    <p className="font-bold">CANADA</p>
+                                                    <p>POST</p>
+                                                </div>
+                                            )}
                                         </div>
 
                                         <div className="border-t border-b py-2 my-2">
@@ -511,7 +756,7 @@ export default function CreateLabel() {
                                 </div>
 
                                 <p className="text-xs text-gray-500 mt-4 text-center">
-                                    Fill out the form to see a live preview of your label
+                                    Preview updates automatically based on selected carrier: <span className="font-semibold text-gray-700">{selectedCarrier}</span>
                                 </p>
                             </div>
                         </div>

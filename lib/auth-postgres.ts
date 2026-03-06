@@ -1,11 +1,12 @@
 import { betterAuth } from "better-auth";
-import { Pool } from "@vercel/postgres";
+import { createPool } from "@vercel/postgres";
 
 // Use Vercel Postgres in production, SQLite in development
 const getDatabase = () => {
     if (process.env.POSTGRES_URL) {
         // Production: Use Vercel Postgres
-        return new Pool();
+        // Vercel Postgres automatically uses environment variables
+        return createPool();
     } else {
         // Development: Use SQLite
         const { kyselyAdapter } = require("@better-auth/kysely-adapter");
