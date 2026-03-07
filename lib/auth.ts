@@ -18,7 +18,7 @@ const getDatabase = () => {
         } as any);
 
         const db = new Kysely({
-            dialect: new PostgresDialect({ pool }),
+            dialect: new PostgresDialect({ pool } as any),
         });
         return kyselyAdapter(db);
     } else {
