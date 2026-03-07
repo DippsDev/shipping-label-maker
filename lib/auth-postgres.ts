@@ -1,19 +1,28 @@
 import { betterAuth } from "better-auth";
-import { createPool } from "@vercel/postgres";
+import { kyselyAdapter } from "@better-auth/kysely-adapter";
+import { Kysely, SqliteDialect, PostgresDialect } from "kysely";
+import Database from "better-sqlite3";
+import pg from "pg";
 
-// Use Vercel Postgres in production, SQLite in development
+const { Pool } = pg;
+
+// Use Supabase Postgres in production, SQLite in development
 const getDatabase = () => {
     if (process.env.POSTGRES_URL) {
-        // Production: Use Vercel Postgres
-        // Vercel Postgres automatically uses environment variables
-        return createPool();
+        // Production: Use Supabase Postgres
+        const pool = new Pool({
+            connectionString: process.env.POSTGRES_URL,
+            ssl: { rejectUnauthorized: false },
+            max: 20,
+        } as any);
+
+        const db = new Kysely<any>({
+            dialect: new PostgresDialect({ pool } as any),
+        });
+        return kyselyAdapter(db);
     } else {
         // Development: Use SQLite
-        const { kyselyAdapter } = require("@better-auth/kysely-adapter");
-        const { Kysely, SqliteDialect } = require("kysely");
-        const Database = require("better-sqlite3");
-
-        const db = new Kysely({
+        const db = new Kysely<any>({
             dialect: new SqliteDialect({
                 database: new Database("./db.sqlite"),
             }),
