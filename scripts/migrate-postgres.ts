@@ -1,19 +1,32 @@
-import { createPool } from "../lib/db";
+import { config } from "dotenv";
+import pg from "pg";
+
+const { Pool } = pg;
+
+// Load environment variables from .env.local
+config({ path: ".env.local" });
+
+// Bypass SSL certificate validation for migration
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
 async function migrate() {
-    const pool = createPool();
+  if (!process.env.POSTGRES_URL) {
+    console.error("PostgreSQL pool not available. Make sure environment variables are set.");
+    process.exit(1);
+  }
 
-    if (!pool) {
-        console.error("PostgreSQL pool not available. Make sure environment variables are set.");
-        process.exit(1);
-    }
+  const pool = new Pool({
+    connectionString: process.env.POSTGRES_URL,
+    ssl: { rejectUnauthorized: false },
+    max: 20,
+  } as any);
 
-    try {
-        console.log("Creating Better Auth tables...");
+  try {
+    console.log("Creating Better Auth tables...");
 
-        // Better Auth will create its own tables automatically
-        // But we need to create the address table
-        await pool.query(`
+    // Better Auth will create its own tables automatically
+    // But we need to create the address table
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS address (
         id TEXT PRIMARY KEY,
         "userId" TEXT NOT NULL,
@@ -33,21 +46,21 @@ async function migrate() {
       )
     `);
 
-        console.log("✅ Address table created successfully");
+    console.log("✅ Address table created successfully");
 
-        // Create index for faster queries
-        await pool.query(`
+    // Create index for faster queries
+    await pool.query(`
       CREATE INDEX IF NOT EXISTS idx_address_userId ON address("userId")
     `);
 
-        console.log("✅ Indexes created successfully");
-        console.log("✅ Migration completed!");
+    console.log("✅ Indexes created successfully");
+    console.log("✅ Migration completed!");
 
-        await pool.end();
-    } catch (error) {
-        console.error("Migration failed:", error);
-        process.exit(1);
-    }
+    await pool.end();
+  } catch (error) {
+    console.error("Migration failed:", error);
+    process.exit(1);
+  }
 }
 
 migrate();
