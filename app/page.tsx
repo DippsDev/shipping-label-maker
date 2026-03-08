@@ -31,7 +31,7 @@ export default function Home() {
           Professional shipping label generation for UPS, FedEx, USPS, Purolator, and Canada Post. Fast, reliable, and affordable.
         </p>
         <div className="flex items-center justify-center gap-4">
-          <Link href="/login" className="bg-gray-900 text-white px-6 py-3 rounded-lg hover:bg-gray-800 transition-colors flex items-center gap-2">
+          <Link href="/dashboard" className="bg-gray-900 text-white px-6 py-3 rounded-lg hover:bg-gray-800 transition-colors flex items-center gap-2">
             <Zap className="h-5 w-5" />
             Start Creating Labels
           </Link>

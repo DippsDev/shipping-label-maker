@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Package, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
-import { signUp } from "@/lib/auth-client";
+import { supabase } from "@/lib/supabase-client";
 import { useRouter } from "next/navigation";
 
 export default function SignUp() {
@@ -21,18 +21,21 @@ export default function SignUp() {
         setLoading(true);
 
         try {
-            await signUp.email({
+            const { data, error: signUpError } = await supabase.auth.signUp({
                 email,
                 password,
-                name,
-            }, {
-                onSuccess: () => {
-                    router.push("/dashboard");
-                },
-                onError: (ctx) => {
-                    setError(ctx.error.message || "Failed to create account");
+                options: {
+                    data: {
+                        name,
+                    },
                 },
             });
+
+            if (signUpError) {
+                setError(signUpError.message);
+            } else if (data.user) {
+                router.push("/dashboard");
+            }
         } catch (err) {
             setError("An error occurred. Please try again.");
         } finally {

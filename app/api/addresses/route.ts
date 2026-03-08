@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
+import { createServerClient } from "@/lib/supabase-server";
 import Database from "better-sqlite3";
 import { createPool } from "@/lib/db";
 
@@ -14,7 +13,9 @@ const getDb = () => {
 };
 
 export async function GET() {
-  const session = await auth.api.getSession({ headers: await headers() });
+  const supabase = await createServerClient();
+  const { data: { session } } = await supabase.auth.getSession();
+
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -40,7 +41,9 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const session = await auth.api.getSession({ headers: await headers() });
+  const supabase = await createServerClient();
+  const { data: { session } } = await supabase.auth.getSession();
+
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

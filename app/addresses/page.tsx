@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Package, LayoutDashboard, Tag, History, Wallet, MapPin, Search, Settings, Plus, Edit, Trash2, Star, Clock, Menu, X } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
-import { useSession, signOut } from "@/lib/auth-client";
+import { supabase } from "@/lib/supabase-client";
 import { useRouter } from "next/navigation";
 
 interface Address {
@@ -40,8 +40,24 @@ export default function AddressesPage() {
         country: "United States"
     });
     const menuRef = useRef<HTMLDivElement>(null);
-    const { data: session, isPending } = useSession();
+    const [session, setSession] = useState<any>(null);
+    const [isLoadingSession, setIsLoadingSession] = useState(true);
     const router = useRouter();
+
+    useEffect(() => {
+        // Get initial session
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            setSession(session);
+            setIsLoadingSession(false);
+        });
+
+        // Listen for auth changes
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            setSession(session);
+        });
+
+        return () => subscription.unsubscribe();
+    }, []);
 
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
@@ -60,10 +76,10 @@ export default function AddressesPage() {
     }, [showAccountMenu]);
 
     useEffect(() => {
-        if (!isPending && !session) {
+        if (!isLoadingSession && !session) {
             router.push("/login");
         }
-    }, [session, isPending, router]);
+    }, [session, isLoadingSession, router]);
 
     useEffect(() => {
         if (session) {
@@ -86,11 +102,11 @@ export default function AddressesPage() {
     };
 
     const handleSignOut = async () => {
-        await signOut();
+        await supabase.auth.signOut();
         router.push("/login");
     };
 
-    if (isPending || isLoading) {
+    if (isLoadingSession || isLoading) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
                 <div className="text-center">
@@ -105,9 +121,9 @@ export default function AddressesPage() {
         return null;
     }
 
-    const userInitials = session.user?.name
-        ? session.user.name.split(" ").map(n => n[0]).join("").toUpperCase()
-        : session.user?.email?.[0].toUpperCase() || "U";
+    const userInitials = session?.user?.user_metadata?.name
+        ? session.user.user_metadata.name.split(" ").map((n: string) => n[0]).join("").toUpperCase()
+        : session?.user?.email?.[0].toUpperCase() || "U";
 
     const filteredAddresses = addresses.filter(address => {
         const matchesSearch = searchQuery === "" ||
@@ -295,7 +311,7 @@ export default function AddressesPage() {
                             <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
                                 <span className="text-sm font-medium text-gray-900">{userInitials}</span>
                             </div>
-                            <span className="text-xs md:text-sm text-gray-600 hidden sm:inline">{session.user?.name || session.user?.email}</span>
+                            <span className="text-xs md:text-sm text-gray-600 hidden sm:inline">{session?.user?.user_metadata?.name || session?.user?.email}</span>
                         </button>
 
                         {showAccountMenu && (
@@ -307,8 +323,8 @@ export default function AddressesPage() {
                                             <span className="text-sm font-medium text-gray-900">{userInitials}</span>
                                         </div>
                                         <div>
-                                            <p className="text-sm font-medium text-gray-900">{session.user?.name || "User"}</p>
-                                            <p className="text-xs text-gray-500">{session.user?.email}</p>
+                                            <p className="text-sm font-medium text-gray-900">{session?.user?.user_metadata?.name || "User"}</p>
+                                            <p className="text-xs text-gray-500">{session?.user?.email}</p>
                                         </div>
                                     </div>
                                 </div>

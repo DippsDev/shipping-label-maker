@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Package, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
-import { signIn } from "@/lib/auth-client";
+import { supabase } from "@/lib/supabase-client";
 import { useRouter } from "next/navigation";
 
 export default function Login() {
@@ -20,17 +20,16 @@ export default function Login() {
         setLoading(true);
 
         try {
-            await signIn.email({
+            const { data, error: signInError } = await supabase.auth.signInWithPassword({
                 email,
                 password,
-            }, {
-                onSuccess: () => {
-                    router.push("/dashboard");
-                },
-                onError: (ctx) => {
-                    setError(ctx.error.message || "Invalid email or password");
-                },
             });
+
+            if (signInError) {
+                setError(signInError.message);
+            } else if (data.user) {
+                router.push("/dashboard");
+            }
         } catch (err) {
             setError("An error occurred. Please try again.");
         } finally {
@@ -41,10 +40,16 @@ export default function Login() {
     const handleGoogleSignIn = async () => {
         setLoading(true);
         try {
-            await signIn.social({
+            const { error } = await supabase.auth.signInWithOAuth({
                 provider: "google",
-                callbackURL: "/dashboard",
+                options: {
+                    redirectTo: `${window.location.origin}/dashboard`,
+                },
             });
+            if (error) {
+                setError("Google sign-in failed. Please try again.");
+                setLoading(false);
+            }
         } catch (err) {
             setError("Google sign-in failed. Please try again.");
             setLoading(false);
@@ -54,10 +59,16 @@ export default function Login() {
     const handleGithubSignIn = async () => {
         setLoading(true);
         try {
-            await signIn.social({
+            const { error } = await supabase.auth.signInWithOAuth({
                 provider: "github",
-                callbackURL: "/dashboard",
+                options: {
+                    redirectTo: `${window.location.origin}/dashboard`,
+                },
             });
+            if (error) {
+                setError("GitHub sign-in failed. Please try again.");
+                setLoading(false);
+            }
         } catch (err) {
             setError("GitHub sign-in failed. Please try again.");
             setLoading(false);

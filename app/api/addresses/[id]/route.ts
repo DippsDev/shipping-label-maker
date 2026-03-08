@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
+import { createServerClient } from "@/lib/supabase-server";
 import Database from "better-sqlite3";
 import { createPool } from "@/lib/db";
 
@@ -17,9 +16,8 @@ export async function PATCH(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
-    const session = await auth.api.getSession({
-        headers: await headers(),
-    });
+    const supabase = await createServerClient();
+    const { data: { session } } = await supabase.auth.getSession();
 
     if (!session) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -137,9 +135,8 @@ export async function DELETE(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
-    const session = await auth.api.getSession({
-        headers: await headers(),
-    });
+    const supabase = await createServerClient();
+    const { data: { session } } = await supabase.auth.getSession();
 
     if (!session) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
