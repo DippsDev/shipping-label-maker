@@ -60,7 +60,7 @@ export default function WalletPage() {
     }
 
     const userInitials = session.user?.user_metadata?.name
-        ? session.user.user_metadata.name.split(" ").map(n => n[0]).join("").toUpperCase()
+        ? session.user.user_metadata.name.split(" ").map((n: string) => n[0]).join("").toUpperCase()
         : session.user?.email?.[0].toUpperCase() || "U";
 
     const transactions: Array<{
