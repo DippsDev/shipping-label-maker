@@ -75,11 +75,12 @@ export default function AddressesPage() {
         };
     }, [showAccountMenu]);
 
-    useEffect(() => {
-        if (!isLoadingSession && !session) {
-            router.push("/login");
-        }
-    }, [session, isLoadingSession, router]);
+    // Redirect to login if not authenticated - DISABLED FOR TESTING
+    // useEffect(() => {
+    //     if (!isLoadingSession && !session) {
+    //         router.push("/login");
+    //     }
+    // }, [session, isLoadingSession, router]);
 
     useEffect(() => {
         if (session) {
@@ -106,24 +107,26 @@ export default function AddressesPage() {
         router.push("/login");
     };
 
-    if (isLoadingSession || isLoading) {
-        return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
-                    <p className="text-gray-600">Loading...</p>
-                </div>
-            </div>
-        );
-    }
+    // Show loading state while checking authentication - DISABLED FOR TESTING
+    // if (isLoadingSession || isLoading) {
+    //     return (
+    //         <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+    //             <div className="text-center">
+    //                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
+    //                 <p className="text-gray-600">Loading...</p>
+    //             </div>
+    //         </div>
+    //     );
+    // }
 
-    if (!session) {
-        return null;
-    }
+    // Don't render if not authenticated - DISABLED FOR TESTING
+    // if (!session) {
+    //     return null;
+    // }
 
     const userInitials = session?.user?.user_metadata?.name
         ? session.user.user_metadata.name.split(" ").map((n: string) => n[0]).join("").toUpperCase()
-        : session?.user?.email?.[0].toUpperCase() || "U";
+        : session?.user?.email?.[0].toUpperCase() || "T";
 
     const filteredAddresses = addresses.filter(address => {
         const matchesSearch = searchQuery === "" ||
@@ -311,7 +314,7 @@ export default function AddressesPage() {
                             <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
                                 <span className="text-sm font-medium text-gray-900">{userInitials}</span>
                             </div>
-                            <span className="text-xs md:text-sm text-gray-600 hidden sm:inline">{session?.user?.user_metadata?.name || session?.user?.email}</span>
+                            <span className="text-xs md:text-sm text-gray-600 hidden sm:inline">{session?.user?.user_metadata?.name || session?.user?.email || "Test User"}</span>
                         </button>
 
                         {showAccountMenu && (
@@ -323,8 +326,8 @@ export default function AddressesPage() {
                                             <span className="text-sm font-medium text-gray-900">{userInitials}</span>
                                         </div>
                                         <div>
-                                            <p className="text-sm font-medium text-gray-900">{session?.user?.user_metadata?.name || "User"}</p>
-                                            <p className="text-xs text-gray-500">{session?.user?.email}</p>
+                                            <p className="text-sm font-medium text-gray-900">{session?.user?.user_metadata?.name || "Test User"}</p>
+                                            <p className="text-xs text-gray-500">{session?.user?.email || "test@example.com"}</p>
                                         </div>
                                     </div>
                                 </div>
