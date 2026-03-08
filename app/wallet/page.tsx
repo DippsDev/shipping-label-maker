@@ -59,8 +59,8 @@ export default function WalletPage() {
         return null;
     }
 
-    const userInitials = session.user?.name
-        ? session.user.name.split(" ").map(n => n[0]).join("").toUpperCase()
+    const userInitials = session.user?.user_metadata?.name
+        ? session.user.user_metadata.name.split(" ").map(n => n[0]).join("").toUpperCase()
         : session.user?.email?.[0].toUpperCase() || "U";
 
     const transactions: Array<{
@@ -165,7 +165,7 @@ export default function WalletPage() {
                             <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
                                 <span className="text-sm font-medium text-gray-900">{userInitials}</span>
                             </div>
-                            <span className="text-xs md:text-sm text-gray-600 hidden sm:inline">{session.user?.name || session.user?.email}</span>
+                            <span className="text-xs md:text-sm text-gray-600 hidden sm:inline">{session.user?.user_metadata?.name || session.user?.email}</span>
                         </button>
 
                         {showAccountMenu && (
@@ -177,7 +177,7 @@ export default function WalletPage() {
                                             <span className="text-sm font-medium text-gray-900">{userInitials}</span>
                                         </div>
                                         <div>
-                                            <p className="text-sm font-medium text-gray-900">{session.user?.name || "User"}</p>
+                                            <p className="text-sm font-medium text-gray-900">{session.user?.user_metadata?.name || "User"}</p>
                                             <p className="text-xs text-gray-500">{session.user?.email}</p>
                                         </div>
                                     </div>

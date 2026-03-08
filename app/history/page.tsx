@@ -69,8 +69,8 @@ export default function HistoryPage() {
             .slice(0, 2);
     };
 
-    const userInitials = session?.user?.name
-        ? getInitials(session.user.name)
+    const userInitials = session?.user?.user_metadata?.name
+        ? getInitials(session.user.user_metadata.name)
         : session?.user?.email
             ? session.user.email.substring(0, 2).toUpperCase()
             : "U";
@@ -210,7 +210,7 @@ export default function HistoryPage() {
                                 <span className="text-sm font-medium text-gray-900">{userInitials}</span>
                             </div>
                             <span className="text-xs md:text-sm text-gray-600 hidden sm:inline">
-                                {session.user?.name || session.user?.email}
+                                {session.user?.user_metadata?.name || session.user?.email}
                             </span>
                         </button>
 
@@ -224,7 +224,7 @@ export default function HistoryPage() {
                                         </div>
                                         <div>
                                             <p className="text-sm font-medium text-gray-900">
-                                                {session.user?.name || "User"}
+                                                {session.user?.user_metadata?.name || "User"}
                                             </p>
                                             <p className="text-xs text-gray-500">{session.user?.email}</p>
                                         </div>
