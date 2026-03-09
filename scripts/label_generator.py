@@ -27,7 +27,12 @@ FONTS_DIR = os.path.join(RESOURCES_DIR, 'fonts')
 try:
     import pytesseract
     from PIL import Image
+    
+    # Configure Tesseract path for Windows
+    pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+    
     OCR_AVAILABLE = True
+    print("✓ Tesseract OCR configured and ready")
 except ImportError:
     OCR_AVAILABLE = False
     print("Warning: pytesseract not installed. OCR functionality will be disabled.")
@@ -230,6 +235,220 @@ def generate_purolator_label(data):
     return blank_label
 
 
+def generate_ups_label(data):
+    """Generate UPS label"""
+    service = data.get('service', 'UPS Ground')
+    template_file = TEMPLATES['ups'].get(service, 'ups_ground.png')
+    template_path = os.path.join(RESOURCES_DIR, template_file)
+    
+    # Load template
+    blank_label = Image.open(template_path)
+    
+    # Load fonts
+    helvetica = os.path.join(FONTS_DIR, 'Helvetica.ttf')
+    helvetica_bold = os.path.join(FONTS_DIR, 'HelveticaBold.ttf')
+    arial_narrow = os.path.join(FONTS_DIR, 'Arial Narrow.ttf')
+    
+    return_address_font = ImageFont.truetype(helvetica, 13)
+    ship_to_font = ImageFont.truetype(helvetica, 22)
+    ship_to_font_bold = ImageFont.truetype(helvetica_bold, 24)
+    tracking_font = ImageFont.truetype(helvetica_bold, 20)
+    zip_font = ImageFont.truetype(helvetica_bold, 72)
+    zone_font = ImageFont.truetype(helvetica_bold, 120)
+    
+    # Get data
+    ship_to_name = data.get('shipToName', '').upper()
+    ship_to_address = data.get('shipToAddress', '').upper()
+    ship_to_address2 = data.get('shipToAddress2', '').upper()
+    ship_to_city = data.get('shipToCity', '').upper()
+    ship_to_state = data.get('shipToState', '').upper()
+    ship_to_zip = data.get('shipToZip', '').upper()
+    tracking_number = data.get('trackingNumber', '').upper()
+    weight = data.get('weight', '1')
+    ups_zone = data.get('upsZone', '959')
+    sorting_code = data.get('sortingCode', '')
+    
+    # Return address
+    return_name = data.get('returnName', 'SENDER NAME')
+    return_address = data.get('returnAddress', '123 MAIN ST')
+    return_city_state_zip = data.get('returnCityStateZip', 'CITY, ST 12345')
+    
+    # Create drawing context
+    draw = ImageDraw.Draw(blank_label)
+    
+    # Draw return address (top left)
+    draw.text((30, 45), return_name, (0, 0, 0), font=return_address_font)
+    draw.text((30, 60), return_address, (0, 0, 0), font=return_address_font)
+    draw.text((30, 75), return_city_state_zip, (0, 0, 0), font=return_address_font)
+    
+    # Draw ship to address
+    draw.text((30, 280), ship_to_name, (0, 0, 0), font=ship_to_font_bold)
+    draw.text((30, 310), ship_to_address, (0, 0, 0), font=ship_to_font)
+    if ship_to_address2:
+        draw.text((30, 335), ship_to_address2, (0, 0, 0), font=ship_to_font)
+        draw.text((30, 360), f"{ship_to_city}, {ship_to_state} {ship_to_zip}", (0, 0, 0), font=ship_to_font)
+    else:
+        draw.text((30, 335), f"{ship_to_city}, {ship_to_state} {ship_to_zip}", (0, 0, 0), font=ship_to_font)
+    
+    # Draw large ZIP code
+    draw.text((50, 480), ship_to_zip[:5], (0, 0, 0), font=zip_font)
+    
+    # Draw zone code (top right)
+    draw.text((580, 120), ups_zone, (0, 0, 0), font=zone_font)
+    
+    # Draw weight
+    draw.text((600, 380), f"{weight} LB", (0, 0, 0), font=ship_to_font_bold)
+    
+    # Draw tracking number
+    formatted_tracking = f"1Z {tracking_number[2:5]} {tracking_number[5:9]} {tracking_number[9:13]} {tracking_number[13:17]} {tracking_number[17:]}"
+    draw.text((30, 750), formatted_tracking, (0, 0, 0), font=tracking_font)
+    
+    # Generate and paste barcode
+    barcode_img = generate_code128_barcode(tracking_number, height=160)
+    barcode_resized = barcode_img.resize((680, 140))
+    blank_label.paste(barcode_resized, (30, 600))
+    
+    return blank_label
+
+
+def generate_fedex_label(data):
+    """Generate FedEx label"""
+    service = data.get('service', 'FedEx Ground')
+    template_file = TEMPLATES['fedex'].get(service, 'master_fedex.png')
+    template_path = os.path.join(RESOURCES_DIR, template_file)
+    
+    # Load template
+    blank_label = Image.open(template_path)
+    
+    # Load fonts
+    helvetica = os.path.join(FONTS_DIR, 'Helvetica.ttf')
+    helvetica_bold = os.path.join(FONTS_DIR, 'HelveticaBold.ttf')
+    
+    return_address_font = ImageFont.truetype(helvetica, 13)
+    ship_to_font = ImageFont.truetype(helvetica, 20)
+    ship_to_font_bold = ImageFont.truetype(helvetica_bold, 22)
+    tracking_font = ImageFont.truetype(helvetica_bold, 18)
+    zip_font = ImageFont.truetype(helvetica_bold, 68)
+    
+    # Get data
+    ship_to_name = data.get('shipToName', '').upper()
+    ship_to_address = data.get('shipToAddress', '').upper()
+    ship_to_address2 = data.get('shipToAddress2', '').upper()
+    ship_to_city = data.get('shipToCity', '').upper()
+    ship_to_state = data.get('shipToState', '').upper()
+    ship_to_zip = data.get('shipToZip', '').upper()
+    tracking_number = data.get('trackingNumber', '').upper()
+    weight = data.get('weight', '1')
+    
+    # Return address
+    return_name = data.get('returnName', 'SENDER NAME')
+    return_address = data.get('returnAddress', '123 MAIN ST')
+    return_city_state_zip = data.get('returnCityStateZip', 'CITY, ST 12345')
+    
+    # Create drawing context
+    draw = ImageDraw.Draw(blank_label)
+    
+    # Draw return address
+    draw.text((35, 50), return_name, (0, 0, 0), font=return_address_font)
+    draw.text((35, 65), return_address, (0, 0, 0), font=return_address_font)
+    draw.text((35, 80), return_city_state_zip, (0, 0, 0), font=return_address_font)
+    
+    # Draw ship to address
+    draw.text((35, 300), ship_to_name, (0, 0, 0), font=ship_to_font_bold)
+    draw.text((35, 325), ship_to_address, (0, 0, 0), font=ship_to_font)
+    if ship_to_address2:
+        draw.text((35, 350), ship_to_address2, (0, 0, 0), font=ship_to_font)
+        draw.text((35, 375), f"{ship_to_city}, {ship_to_state} {ship_to_zip}", (0, 0, 0), font=ship_to_font)
+    else:
+        draw.text((35, 350), f"{ship_to_city}, {ship_to_state} {ship_to_zip}", (0, 0, 0), font=ship_to_font)
+    
+    # Draw large ZIP code
+    draw.text((50, 500), ship_to_zip[:5], (0, 0, 0), font=zip_font)
+    
+    # Draw weight
+    draw.text((600, 400), f"{weight} LB", (0, 0, 0), font=ship_to_font_bold)
+    
+    # Draw tracking number
+    formatted_tracking = f"{tracking_number[:4]} {tracking_number[4:8]} {tracking_number[8:]}"
+    draw.text((35, 780), formatted_tracking, (0, 0, 0), font=tracking_font)
+    
+    # Generate and paste barcode
+    barcode_img = generate_code128_barcode(tracking_number, height=160)
+    barcode_resized = barcode_img.resize((680, 140))
+    blank_label.paste(barcode_resized, (30, 630))
+    
+    return blank_label
+
+
+def generate_usps_label(data):
+    """Generate USPS label"""
+    service = data.get('service', 'Priority Mail')
+    template_file = TEMPLATES['usps'].get(service, 'priority_master.png')
+    template_path = os.path.join(RESOURCES_DIR, template_file)
+    
+    # Load template
+    blank_label = Image.open(template_path)
+    
+    # Load fonts
+    helvetica = os.path.join(FONTS_DIR, 'Helvetica.ttf')
+    helvetica_bold = os.path.join(FONTS_DIR, 'HelveticaBold.ttf')
+    
+    return_address_font = ImageFont.truetype(helvetica, 14)
+    ship_to_font = ImageFont.truetype(helvetica, 20)
+    ship_to_font_bold = ImageFont.truetype(helvetica_bold, 22)
+    tracking_font = ImageFont.truetype(helvetica_bold, 16)
+    zip_font = ImageFont.truetype(helvetica_bold, 64)
+    
+    # Get data
+    ship_to_name = data.get('shipToName', '').upper()
+    ship_to_address = data.get('shipToAddress', '').upper()
+    ship_to_address2 = data.get('shipToAddress2', '').upper()
+    ship_to_city = data.get('shipToCity', '').upper()
+    ship_to_state = data.get('shipToState', '').upper()
+    ship_to_zip = data.get('shipToZip', '').upper()
+    tracking_number = data.get('trackingNumber', '').upper()
+    weight = data.get('weight', '1')
+    
+    # Return address
+    return_name = data.get('returnName', 'SENDER NAME')
+    return_address = data.get('returnAddress', '123 MAIN ST')
+    return_city_state_zip = data.get('returnCityStateZip', 'CITY, ST 12345')
+    
+    # Create drawing context
+    draw = ImageDraw.Draw(blank_label)
+    
+    # Draw return address
+    draw.text((40, 60), return_name, (0, 0, 0), font=return_address_font)
+    draw.text((40, 78), return_address, (0, 0, 0), font=return_address_font)
+    draw.text((40, 96), return_city_state_zip, (0, 0, 0), font=return_address_font)
+    
+    # Draw ship to address
+    draw.text((40, 320), ship_to_name, (0, 0, 0), font=ship_to_font_bold)
+    draw.text((40, 348), ship_to_address, (0, 0, 0), font=ship_to_font)
+    if ship_to_address2:
+        draw.text((40, 376), ship_to_address2, (0, 0, 0), font=ship_to_font)
+        draw.text((40, 404), f"{ship_to_city}, {ship_to_state} {ship_to_zip}", (0, 0, 0), font=ship_to_font)
+    else:
+        draw.text((40, 376), f"{ship_to_city}, {ship_to_state} {ship_to_zip}", (0, 0, 0), font=ship_to_font)
+    
+    # Draw large ZIP code
+    draw.text((60, 530), ship_to_zip[:5], (0, 0, 0), font=zip_font)
+    
+    # Draw weight
+    draw.text((600, 420), f"{weight} LB", (0, 0, 0), font=ship_to_font_bold)
+    
+    # Draw tracking number
+    formatted_tracking = f"{tracking_number[:4]} {tracking_number[4:8]} {tracking_number[8:12]} {tracking_number[12:16]} {tracking_number[16:]}"
+    draw.text((40, 820), formatted_tracking, (0, 0, 0), font=tracking_font)
+    
+    # Generate and paste barcode
+    barcode_img = generate_code128_barcode(tracking_number, height=160)
+    barcode_resized = barcode_img.resize((680, 140))
+    blank_label.paste(barcode_resized, (30, 670))
+    
+    return blank_label
+
+
 @app.route('/api/generate-label', methods=['POST'])
 def generate_label():
     """Main endpoint to generate labels"""
@@ -241,6 +460,12 @@ def generate_label():
             label_image = generate_canada_post_label(data)
         elif carrier == 'purolator':
             label_image = generate_purolator_label(data)
+        elif carrier == 'ups':
+            label_image = generate_ups_label(data)
+        elif carrier == 'fedex':
+            label_image = generate_fedex_label(data)
+        elif carrier == 'usps':
+            label_image = generate_usps_label(data)
         else:
             return jsonify({'error': f'Carrier {carrier} not yet implemented'}), 400
         

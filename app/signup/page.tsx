@@ -25,6 +25,7 @@ export default function SignUp() {
                 email,
                 password,
                 options: {
+                    emailRedirectTo: `${window.location.origin}/dashboard`,
                     data: {
                         name,
                     },
@@ -34,7 +35,14 @@ export default function SignUp() {
             if (signUpError) {
                 setError(signUpError.message);
             } else if (data.user) {
-                router.push("/dashboard");
+                // Check if email confirmation is required
+                if (data.session) {
+                    // User is automatically logged in (email confirmation disabled)
+                    router.push("/dashboard");
+                } else {
+                    // Email confirmation required
+                    setError("Please check your email to confirm your account before logging in.");
+                }
             }
         } catch (err) {
             setError("An error occurred. Please try again.");

@@ -9,9 +9,33 @@ import { useRouter } from "next/navigation";
 export default function Dashboard() {
     const [showAccountMenu, setShowAccountMenu] = useState(false);
     const [showMobileMenu, setShowMobileMenu] = useState(false);
+    const [stats, setStats] = useState({
+        totalLabels: 0,
+        savedAddresses: 0,
+        walletBalance: 100.00,
+        mostUsedCarrier: 'N/A',
+    });
     const menuRef = useRef<HTMLDivElement>(null);
     const { data: session, isPending } = useSession();
     const router = useRouter();
+
+    // Fetch stats on component mount
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const userId = session?.user?.id || 'guest';
+                const response = await fetch(`/api/stats?userId=${userId}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    setStats(data);
+                }
+            } catch (error) {
+                console.error('Error fetching stats:', error);
+            }
+        };
+
+        fetchStats();
+    }, [session]);
 
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
@@ -190,23 +214,32 @@ export default function Dashboard() {
 
                 {/* Content */}
                 <div className="p-8">
-                    <div className="grid md:grid-cols-3 gap-6 mb-8">
+                    <div className="grid md:grid-cols-4 gap-6 mb-8">
                         <div className="bg-white p-6 rounded-lg border border-gray-200">
                             <div className="flex items-center justify-between mb-4">
                                 <h3 className="text-lg font-semibold text-gray-900">Total Labels</h3>
                                 <Tag className="h-8 w-8 text-gray-600" />
                             </div>
-                            <p className="text-3xl font-bold text-gray-900">0</p>
+                            <p className="text-3xl font-bold text-gray-900">{stats.totalLabels}</p>
                             <p className="text-sm text-gray-600 mt-2">Generated this month</p>
                         </div>
 
                         <div className="bg-white p-6 rounded-lg border border-gray-200">
                             <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-lg font-semibold text-gray-900">Active Shipments</h3>
+                                <h3 className="text-lg font-semibold text-gray-900">Wallet Balance</h3>
+                                <Wallet className="h-8 w-8 text-gray-600" />
+                            </div>
+                            <p className="text-3xl font-bold text-gray-900">${stats.walletBalance.toFixed(2)}</p>
+                            <p className="text-sm text-blue-600 mt-2 cursor-pointer hover:underline">Top up now</p>
+                        </div>
+
+                        <div className="bg-white p-6 rounded-lg border border-gray-200">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-lg font-semibold text-gray-900">Most Used</h3>
                                 <Package className="h-8 w-8 text-gray-600" />
                             </div>
-                            <p className="text-3xl font-bold text-gray-900">0</p>
-                            <p className="text-sm text-gray-600 mt-2">In transit</p>
+                            <p className="text-3xl font-bold text-gray-900">{stats.mostUsedCarrier}</p>
+                            <p className="text-sm text-gray-600 mt-2">Carrier preference</p>
                         </div>
 
                         <div className="bg-white p-6 rounded-lg border border-gray-200">
@@ -214,7 +247,7 @@ export default function Dashboard() {
                                 <h3 className="text-lg font-semibold text-gray-900">Saved Addresses</h3>
                                 <MapPin className="h-8 w-8 text-gray-600" />
                             </div>
-                            <p className="text-3xl font-bold text-gray-900">0</p>
+                            <p className="text-3xl font-bold text-gray-900">{stats.savedAddresses}</p>
                             <p className="text-sm text-gray-600 mt-2">Quick access</p>
                         </div>
                     </div>

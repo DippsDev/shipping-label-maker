@@ -17,6 +17,7 @@ export default function CreateLabel() {
     const [uploadedLabel, setUploadedLabel] = useState<File | null>(null);
     const [isProcessingLabel, setIsProcessingLabel] = useState(false);
     const [lastGeneratedLabel, setLastGeneratedLabel] = useState<Blob | null>(null);
+    const [showPreviewModal, setShowPreviewModal] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Form data
@@ -325,23 +326,39 @@ export default function CreateLabel() {
                 console.log('Setup Instructions:', result.instructions);
                 console.log('📋 See website/LABEL_SETUP.md for detailed setup guide');
             } else {
-                // It's an image - save it and download it
+                // It's an image - store it for preview and download/print
                 const blob = await response.blob();
 
-                // Store the blob for download/print buttons
+                // Store the blob for preview and download/print buttons
                 setLastGeneratedLabel(blob);
 
-                // Auto-download
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `label_${trackingNumber}.png`;
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(url);
-                document.body.removeChild(a);
+                // Save label to database
+                try {
+                    const userId = session?.user?.id || 'guest';
+                    await fetch('/api/labels', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            userId,
+                            carrier: selectedCarrier,
+                            service: selectedService,
+                            trackingNumber,
+                            shipToName,
+                            shipToAddress,
+                            shipToCity,
+                            shipToState: shipToState || shipToZip.substring(0, 2),
+                            shipToZip,
+                            weight,
+                        }),
+                    });
+                } catch (error) {
+                    console.error('Error saving label to database:', error);
+                    // Don't show error to user, label was still generated successfully
+                }
 
-                setGenerationSuccess("Label generated successfully! Use Download or Print buttons below.");
+                setGenerationSuccess("Label generated successfully! Preview shown on the right. Use Download or Print buttons.");
             }
         } catch (error) {
             console.error('Label generation error:', error);
@@ -927,64 +944,74 @@ export default function CreateLabel() {
                             <div className="bg-white rounded-lg border border-gray-200 p-4 md:p-6 xl:sticky xl:top-8">
                                 <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Label Preview</h2>
 
-                                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 mb-4 bg-gray-50">
-                                    <div className="bg-white p-4 rounded shadow-sm">
-                                        <div className="flex items-start justify-between mb-3">
-                                            <div className="text-xs text-gray-900">
-                                                <p className="font-bold">{selectedCarrier.toUpperCase()}</p>
-                                                <p>{selectedService || "Select a service"}</p>
+                                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 mb-4 bg-gray-50 min-h-[400px] flex items-center justify-center">
+                                    {lastGeneratedLabel ? (
+                                        <img
+                                            src={URL.createObjectURL(lastGeneratedLabel)}
+                                            alt="Generated Label Preview"
+                                            className="max-w-full h-auto rounded shadow-lg cursor-pointer hover:opacity-90 transition-opacity"
+                                            onClick={() => setShowPreviewModal(true)}
+                                            title="Click to view full size"
+                                        />
+                                    ) : (
+                                        <div className="bg-white p-4 rounded shadow-sm w-full">
+                                            <div className="flex items-start justify-between mb-3">
+                                                <div className="text-xs text-gray-900">
+                                                    <p className="font-bold">{selectedCarrier.toUpperCase()}</p>
+                                                    <p>{selectedService || "Select a service"}</p>
+                                                </div>
+                                                {selectedCarrier === "UPS" && (
+                                                    <div className="text-right text-xs text-gray-900">
+                                                        <p>KY-6-21</p>
+                                                        <p className="font-bold">959</p>
+                                                    </div>
+                                                )}
+                                                {selectedCarrier === "FedEx" && (
+                                                    <div className="text-right text-xs text-gray-900">
+                                                        <p className="font-bold">PRIORITY</p>
+                                                        <p>OVERNIGHT</p>
+                                                    </div>
+                                                )}
+                                                {selectedCarrier === "USPS" && (
+                                                    <div className="text-right text-xs text-gray-900">
+                                                        <p className="font-bold">USPS</p>
+                                                        <p>PRIORITY</p>
+                                                    </div>
+                                                )}
+                                                {(selectedCarrier === "Purolator" || selectedCarrier === "Canada Post") && (
+                                                    <div className="text-right text-xs text-gray-900">
+                                                        <p className="font-bold">CANADA</p>
+                                                        <p>POST</p>
+                                                    </div>
+                                                )}
                                             </div>
-                                            {selectedCarrier === "UPS" && (
-                                                <div className="text-right text-xs text-gray-900">
-                                                    <p>KY-6-21</p>
-                                                    <p className="font-bold">959</p>
-                                                </div>
-                                            )}
-                                            {selectedCarrier === "FedEx" && (
-                                                <div className="text-right text-xs text-gray-900">
-                                                    <p className="font-bold">PRIORITY</p>
-                                                    <p>OVERNIGHT</p>
-                                                </div>
-                                            )}
-                                            {selectedCarrier === "USPS" && (
-                                                <div className="text-right text-xs text-gray-900">
-                                                    <p className="font-bold">USPS</p>
-                                                    <p>PRIORITY</p>
-                                                </div>
-                                            )}
-                                            {(selectedCarrier === "Purolator" || selectedCarrier === "Canada Post") && (
-                                                <div className="text-right text-xs text-gray-900">
-                                                    <p className="font-bold">CANADA</p>
-                                                    <p>POST</p>
-                                                </div>
-                                            )}
-                                        </div>
 
-                                        <div className="border-t border-b py-2 my-2">
-                                            <svg className="w-full h-12" viewBox="0 0 200 40">
-                                                <rect width="2" height="40" x="10" fill="black" />
-                                                <rect width="1" height="40" x="15" fill="black" />
-                                                <rect width="3" height="40" x="20" fill="black" />
-                                                <rect width="2" height="40" x="26" fill="black" />
-                                                <rect width="1" height="40" x="31" fill="black" />
-                                                <rect width="2" height="40" x="35" fill="black" />
-                                                <rect width="3" height="40" x="40" fill="black" />
-                                                <rect width="1" height="40" x="46" fill="black" />
-                                                <rect width="2" height="40" x="50" fill="black" />
-                                                <rect width="1" height="40" x="55" fill="black" />
-                                                <rect width="3" height="40" x="60" fill="black" />
-                                            </svg>
-                                        </div>
+                                            <div className="border-t border-b py-2 my-2">
+                                                <svg className="w-full h-12" viewBox="0 0 200 40">
+                                                    <rect width="2" height="40" x="10" fill="black" />
+                                                    <rect width="1" height="40" x="15" fill="black" />
+                                                    <rect width="3" height="40" x="20" fill="black" />
+                                                    <rect width="2" height="40" x="26" fill="black" />
+                                                    <rect width="1" height="40" x="31" fill="black" />
+                                                    <rect width="2" height="40" x="35" fill="black" />
+                                                    <rect width="3" height="40" x="40" fill="black" />
+                                                    <rect width="1" height="40" x="46" fill="black" />
+                                                    <rect width="2" height="40" x="50" fill="black" />
+                                                    <rect width="1" height="40" x="55" fill="black" />
+                                                    <rect width="3" height="40" x="60" fill="black" />
+                                                </svg>
+                                            </div>
 
-                                        <div className="text-xs space-y-1 text-gray-900">
-                                            <p className="font-bold">SHIP TO:</p>
-                                            <p>Recipient Name</p>
-                                            <p>Address Line 1</p>
-                                            <p>Address Line 2</p>
-                                            <p>City, State ZIP</p>
-                                            <p>Country</p>
+                                            <div className="text-xs space-y-1 text-gray-900">
+                                                <p className="font-bold">SHIP TO:</p>
+                                                <p>Recipient Name</p>
+                                                <p>Address Line 1</p>
+                                                <p>Address Line 2</p>
+                                                <p>City, State ZIP</p>
+                                                <p>Country</p>
+                                            </div>
                                         </div>
-                                    </div>
+                                    )}
                                 </div>
 
                                 <div className="space-y-3">
@@ -1023,6 +1050,30 @@ export default function CreateLabel() {
                     </div>
                 </div>
             </main>
+
+            {/* Preview Modal */}
+            {showPreviewModal && lastGeneratedLabel && (
+                <div
+                    className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4"
+                    onClick={() => setShowPreviewModal(false)}
+                >
+                    <div className="relative max-w-4xl max-h-[90vh] overflow-auto">
+                        <button
+                            onClick={() => setShowPreviewModal(false)}
+                            className="absolute top-4 right-4 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition-colors z-10"
+                            title="Close preview"
+                        >
+                            <X className="h-6 w-6 text-gray-900" />
+                        </button>
+                        <img
+                            src={URL.createObjectURL(lastGeneratedLabel)}
+                            alt="Full Size Label Preview"
+                            className="max-w-full h-auto rounded-lg shadow-2xl"
+                            onClick={(e) => e.stopPropagation()}
+                        />
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

@@ -31,11 +31,9 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Option 1: Proxy to Python OCR service
-        // Uncomment this when you have the Python OCR service running
-        /*
+        // Proxy to Python OCR service
         const pythonServiceUrl = process.env.LABEL_GENERATOR_URL || 'http://localhost:5000';
-        
+
         const ocrFormData = new FormData();
         const buffer = await file.arrayBuffer();
         const blob = new Blob([buffer], { type: file.type });
@@ -53,28 +51,6 @@ export async function POST(request: NextRequest) {
 
         const data = await response.json();
         return NextResponse.json(data);
-        */
-
-        // Option 2: For now, return a message indicating OCR is not configured
-        return NextResponse.json({
-            success: false,
-            message: 'OCR service not yet configured',
-            instructions: [
-                '1. Install OCR dependencies (Tesseract, pytesseract, or use cloud OCR)',
-                '2. Implement OCR endpoint in Python service (scripts/label_generator.py)',
-                '3. Uncomment the proxy code in this file',
-                '4. The service will extract: tracking number, addresses, carrier info, etc.',
-            ],
-            // Return empty data so form isn't auto-filled
-            carrier: null,
-            service: null,
-            trackingNumber: null,
-            shipToName: null,
-            shipToAddress: null,
-            shipToCity: null,
-            shipToState: null,
-            shipToZip: null,
-        }, { status: 200 });
 
     } catch (error) {
         console.error('Label processing error:', error);
