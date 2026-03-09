@@ -75,12 +75,12 @@ export default function AddressesPage() {
         };
     }, [showAccountMenu]);
 
-    // Redirect to login if not authenticated - DISABLED FOR TESTING
-    // useEffect(() => {
-    //     if (!isLoadingSession && !session) {
-    //         router.push("/login");
-    //     }
-    // }, [session, isLoadingSession, router]);
+    // Redirect to login if not authenticated
+    useEffect(() => {
+        if (!isLoadingSession && !session) {
+            router.push("/login");
+        }
+    }, [session, isLoadingSession, router]);
 
     useEffect(() => {
         if (session) {
@@ -107,22 +107,22 @@ export default function AddressesPage() {
         router.push("/login");
     };
 
-    // Show loading state while checking authentication - DISABLED FOR TESTING
-    // if (isLoadingSession || isLoading) {
-    //     return (
-    //         <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-    //             <div className="text-center">
-    //                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
-    //                 <p className="text-gray-600">Loading...</p>
-    //             </div>
-    //         </div>
-    //     );
-    // }
+    // Show loading state while checking authentication
+    if (isLoadingSession || isLoading) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Loading...</p>
+                </div>
+            </div>
+        );
+    }
 
-    // Don't render if not authenticated - DISABLED FOR TESTING
-    // if (!session) {
-    //     return null;
-    // }
+    // Don't render if not authenticated
+    if (!session) {
+        return null;
+    }
 
     const userInitials = session?.user?.user_metadata?.name
         ? session.user.user_metadata.name.split(" ").map((n: string) => n[0]).join("").toUpperCase()

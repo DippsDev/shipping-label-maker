@@ -60,12 +60,12 @@ export default function CreateLabel() {
     const showMCode = selectedCarrier === "USPS" && selectedService === "Smart Label / Pitney Bowes";
     const showSortingCode = selectedCarrier === "UPS" || selectedCarrier === "Purolator";
 
-    // Redirect to login if not authenticated - DISABLED FOR TESTING
-    // useEffect(() => {
-    //     if (!isPending && !session) {
-    //         router.push("/login");
-    //     }
-    // }, [session, isPending, router]);
+    // Redirect to login if not authenticated
+    useEffect(() => {
+        if (!isPending && !session) {
+            router.push("/login");
+        }
+    }, [session, isPending, router]);
 
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
@@ -374,22 +374,22 @@ export default function CreateLabel() {
             ? session.user.email.substring(0, 2).toUpperCase()
             : "T";
 
-    // Show loading state while checking authentication - DISABLED FOR TESTING
-    // if (isPending) {
-    //     return (
-    //         <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-    //             <div className="text-center">
-    //                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
-    //                 <p className="text-gray-600">Loading...</p>
-    //             </div>
-    //         </div>
-    //     );
-    // }
+    // Show loading state while checking authentication
+    if (isPending) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Loading...</p>
+                </div>
+            </div>
+        );
+    }
 
-    // Don't render if not authenticated - DISABLED FOR TESTING
-    // if (!session) {
-    //     return null;
-    // }
+    // Don't render if not authenticated
+    if (!session) {
+        return null;
+    }
 
     return (
         <div className="flex min-h-screen bg-gray-50">
