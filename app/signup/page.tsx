@@ -56,10 +56,10 @@ export default function SignUp() {
             <div className="w-full max-w-md">
                 {/* Logo and Header */}
                 <div className="text-center mb-8">
-                    <div className="flex items-center justify-center gap-2 mb-4">
+                    <Link href="/" className="flex items-center justify-center gap-2 mb-4 hover:opacity-80 transition-opacity">
                         <Package className="h-8 w-8 text-gray-900" />
                         <span className="text-2xl font-bold text-gray-900">Label Maker</span>
-                    </div>
+                    </Link>
                     <h1 className="text-2xl font-semibold text-gray-900 mb-2">Create an account</h1>
                     <p className="text-gray-600">Get started with your free account</p>
                 </div>

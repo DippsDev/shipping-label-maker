@@ -12,9 +12,11 @@
   },
   "dependencies": {
     "@aws-sdk/rds-signer": "^3.1003.0",
+    "@napi-rs/canvas": "^0.1.97",
     "@supabase/supabase-js": "^2.47.10",
     "@vercel/functions": "^3.4.3",
     "@vercel/postgres": "^0.10.0",
+    "bwip-js": "^4.8.0",
     "dotenv": "^17.3.1",
     "lucide-react": "^0.575.0",
     "next": "16.1.6",
