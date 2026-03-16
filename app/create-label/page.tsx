@@ -18,6 +18,9 @@ export default function CreateLabel() {
     const [isProcessingLabel, setIsProcessingLabel] = useState(false);
     const [lastGeneratedLabel, setLastGeneratedLabel] = useState<Blob | null>(null);
     const [showPreviewModal, setShowPreviewModal] = useState(false);
+    const [showAddressBook, setShowAddressBook] = useState(false);
+    const [addressBookList, setAddressBookList] = useState<{ id: string; name: string; phone?: string; addressLine1: string; addressLine2?: string; city: string; state: string; zipCode: string; country: string }[]>([]);
+    const [addressBookSearch, setAddressBookSearch] = useState("");
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Form data
@@ -193,6 +196,29 @@ export default function CreateLabel() {
 
     const handleSelectFile = () => {
         fileInputRef.current?.click();
+    };
+
+    const handleOpenAddressBook = async () => {
+        setAddressBookSearch("");
+        setShowAddressBook(true);
+        try {
+            const res = await fetch('/api/addresses');
+            if (res.ok) setAddressBookList(await res.json());
+        } catch (e) {
+            console.error('Failed to fetch addresses:', e);
+        }
+    };
+
+    const handleSelectAddress = (addr: typeof addressBookList[0]) => {
+        setShipToName(addr.name);
+        setShipToAddress(addr.addressLine1);
+        setShipToAddress2(addr.addressLine2 || "");
+        setShipToCity(addr.city);
+        setShipToState(addr.state);
+        setShipToZip(addr.zipCode);
+        setCountry(addr.country);
+        if (addr.phone) setPhone(addr.phone);
+        setShowAddressBook(false);
     };
 
     const handleRemoveLabel = () => {
@@ -697,7 +723,7 @@ export default function CreateLabel() {
                             <div className="bg-white rounded-lg border border-gray-200 p-4 md:p-6">
                                 <div className="flex items-center justify-between mb-4">
                                     <h2 className="text-base md:text-lg font-semibold text-gray-900">Ship To</h2>
-                                    <button className="flex items-center gap-2 px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50 text-xs md:text-sm text-gray-700">
+                                    <button onClick={handleOpenAddressBook} className="flex items-center gap-2 px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50 text-xs md:text-sm text-gray-700">
                                         <BookOpen className="h-4 w-4" />
                                         <span className="hidden sm:inline">Address Book</span>
                                     </button>
@@ -1050,6 +1076,61 @@ export default function CreateLabel() {
                     </div>
                 </div>
             </main>
+
+            {/* Address Book Modal */}
+            {showAddressBook && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-lg w-full max-w-lg max-h-[80vh] flex flex-col">
+                        <div className="flex items-center justify-between p-4 border-b border-gray-200">
+                            <h3 className="text-lg font-semibold text-gray-900">Select Address</h3>
+                            <button onClick={() => setShowAddressBook(false)} className="p-1.5 hover:bg-gray-100 rounded-lg">
+                                <X className="h-5 w-5 text-gray-500" />
+                            </button>
+                        </div>
+                        <div className="p-4 border-b border-gray-200">
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                                <input
+                                    type="text"
+                                    placeholder="Search addresses..."
+                                    value={addressBookSearch}
+                                    onChange={e => setAddressBookSearch(e.target.value)}
+                                    className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900"
+                                    autoFocus
+                                />
+                            </div>
+                        </div>
+                        <div className="overflow-y-auto flex-1 p-2">
+                            {addressBookList.length === 0 ? (
+                                <div className="text-center py-10 text-gray-500 text-sm">
+                                    <MapPin className="h-8 w-8 text-gray-300 mx-auto mb-2" />
+                                    No saved addresses found
+                                </div>
+                            ) : (
+                                addressBookList
+                                    .filter(a =>
+                                        addressBookSearch === "" ||
+                                        a.name.toLowerCase().includes(addressBookSearch.toLowerCase()) ||
+                                        a.addressLine1.toLowerCase().includes(addressBookSearch.toLowerCase()) ||
+                                        a.city.toLowerCase().includes(addressBookSearch.toLowerCase()) ||
+                                        a.zipCode.includes(addressBookSearch)
+                                    )
+                                    .map(addr => (
+                                        <button
+                                            key={addr.id}
+                                            onClick={() => handleSelectAddress(addr)}
+                                            className="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-50 border border-transparent hover:border-gray-200 transition-colors mb-1"
+                                        >
+                                            <p className="font-medium text-gray-900 text-sm">{addr.name}</p>
+                                            <p className="text-xs text-gray-500 mt-0.5">{addr.addressLine1}{addr.addressLine2 ? `, ${addr.addressLine2}` : ''}</p>
+                                            <p className="text-xs text-gray-500">{addr.city}, {addr.state} {addr.zipCode} · {addr.country}</p>
+                                        </button>
+                                    ))
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Preview Modal */}
             {showPreviewModal && lastGeneratedLabel && (
