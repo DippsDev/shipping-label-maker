@@ -340,7 +340,7 @@ export async function POST(request: NextRequest) {
 
     const pngBuffer = await canvas.encode('png');
 
-    return new NextResponse(pngBuffer, {
+    return new NextResponse(new Uint8Array(pngBuffer), {
       headers: {
         'Content-Type': 'image/png',
         'Content-Disposition': `attachment; filename="label_${data.trackingNumber}.png"`,
