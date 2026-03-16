@@ -29,6 +29,8 @@ export default function HistoryPage() {
     const [selectedCarrier, setSelectedCarrier] = useState<string>("all");
     const [searchQuery, setSearchQuery] = useState("");
     const [dateFilter, setDateFilter] = useState<string>("all");
+    const [labels, setLabels] = useState<Label[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
     const menuRef = useRef<HTMLDivElement>(null);
     const { data: session, isPending } = useSession();
     const router = useRouter();
@@ -55,6 +57,41 @@ export default function HistoryPage() {
             document.removeEventListener("mousedown", handleClickOutside);
         };
     }, [showAccountMenu]);
+
+    // Fetch labels from API
+    useEffect(() => {
+        if (!session) return;
+        const userId = session.user?.id || 'guest';
+        fetch(`/api/labels?userId=${userId}`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.labels) {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    setLabels(data.labels.map((l: any) => ({
+                        id: l.id,
+                        trackingNumber: l.trackingNumber || l.trackingnumber || '',
+                        carrier: l.carrier || '',
+                        service: l.service || '',
+                        recipientName: l.shipToName || l.shipttoname || '',
+                        recipientAddress: l.shipToAddress || l.shiptoaddress || '',
+                        recipientCity: l.shipToCity || l.shiptocity || '',
+                        recipientState: l.shipToState || l.shiptostate || '',
+                        recipientZip: l.shipToZip || l.shiptozip || '',
+                        weight: parseFloat(l.weight) || 0,
+                        cost: parseFloat(l.cost) || 0,
+                        status: 'completed' as const,
+                        createdDate: l.createdAt
+                            ? new Date(typeof l.createdAt === 'number' ? l.createdAt : Date.parse(l.createdAt)).toISOString().split('T')[0]
+                            : '',
+                        createdTime: l.createdAt
+                            ? new Date(typeof l.createdAt === 'number' ? l.createdAt : Date.parse(l.createdAt)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                            : '',
+                    })));
+                }
+            })
+            .catch(err => console.error('Failed to fetch labels:', err))
+            .finally(() => setIsLoading(false));
+    }, [session]);
 
     const handleSignOut = async () => {
         await signOut();
@@ -93,8 +130,8 @@ export default function HistoryPage() {
         return null;
     }
 
-    const labels: Label[] = [];
-
+    const now = new Date();
+    const thisMonthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     const filteredLabels = labels.filter(label => {
         const matchesCarrier = selectedCarrier === "all" || label.carrier === selectedCarrier;
         const matchesSearch = searchQuery === "" ||
@@ -104,13 +141,14 @@ export default function HistoryPage() {
 
         let matchesDate = true;
         if (dateFilter === "today") {
-            matchesDate = label.createdDate === "2026-03-03";
+            matchesDate = label.createdDate === new Date().toISOString().split('T')[0];
         } else if (dateFilter === "week") {
             const labelDate = new Date(label.createdDate);
-            const weekAgo = new Date("2026-02-24");
+            const weekAgo = new Date();
+            weekAgo.setDate(weekAgo.getDate() - 7);
             matchesDate = labelDate >= weekAgo;
         } else if (dateFilter === "month") {
-            matchesDate = label.createdDate.startsWith("2026-03") || label.createdDate.startsWith("2026-02");
+            matchesDate = label.createdDate.startsWith(thisMonthPrefix);
         }
 
         return matchesCarrier && matchesSearch && matchesDate;
@@ -118,7 +156,7 @@ export default function HistoryPage() {
 
     const totalLabels = labels.length;
     const totalSpent = labels.reduce((sum, label) => sum + label.cost, 0);
-    const thisMonthLabels = labels.filter(l => l.createdDate.startsWith("2026-03")).length;
+    const thisMonthLabels = labels.filter(l => l.createdDate.startsWith(thisMonthPrefix)).length;
 
     return (
         <div className="flex min-h-screen bg-gray-50">
@@ -395,8 +433,14 @@ export default function HistoryPage() {
                         {filteredLabels.length === 0 && (
                             <div className="p-12 text-center">
                                 <History className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                                <p className="text-gray-600">No labels yet</p>
-                                <p className="text-sm text-gray-500 mt-1">Create your first shipping label to get started</p>
+                                {isLoading ? (
+                                    <p className="text-gray-600">Loading labels...</p>
+                                ) : (
+                                    <>
+                                        <p className="text-gray-600">No labels yet</p>
+                                        <p className="text-sm text-gray-500 mt-1">Create your first shipping label to get started</p>
+                                    </>
+                                )}
                             </div>
                         )}
                     </div>
