@@ -1,5 +1,13 @@
 import Link from "next/link";
-import { Package, Truck, Zap, Shield, Users, CreditCard, BookOpen } from "lucide-react";
+import { Package } from "lucide-react";
+import {
+  TruckIcon,
+  BoltIcon,
+  ShieldCheckIcon,
+  UserGroupIcon,
+  WalletIcon,
+  BookOpenIcon,
+} from "@heroicons/react/24/outline";
 
 export default function Home() {
   return (
@@ -9,7 +17,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Package className="h-6 w-6 text-gray-900" />
-            <span className="text-base md:text-lg font-semibold text-gray-900">Label Maker Pro</span>
+            <span className="text-sm md:text-lg font-semibold text-gray-900">Label Maker Pro</span>
           </div>
           <div className="flex items-center gap-4">
             <Link href="/login" className="text-sm md:text-base text-gray-600 hover:text-gray-900 transition-colors">
@@ -31,11 +39,17 @@ export default function Home() {
           Professional shipping label generation for UPS, FedEx, USPS, Purolator, and Canada Post. Fast, reliable, and affordable.
         </p>
         <div className="flex items-center justify-center gap-4">
-          <Link href="/login" className="bg-gray-900 text-white px-6 py-3 rounded-lg hover:bg-gray-800 transition-colors flex items-center gap-2">
-            <Zap className="h-5 w-5" />
+          <Link
+            href="/login"
+            className="bg-gray-900 text-white px-4 py-2 text-sm md:px-6 md:py-3 md:text-base rounded-lg hover:bg-gray-800 transition-colors flex items-center gap-1 md:gap-2"
+          >
+            <BoltIcon className="h-5 w-5" />
             Start Creating Labels
           </Link>
-          <Link href="/features" className="text-gray-900 px-6 py-3 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors">
+          <Link
+            href="/features"
+            className="text-gray-900 px-4 py-2 text-sm md:px-6 md:py-3 md:text-base rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors"
+          >
             View Pricing
           </Link>
         </div>
@@ -69,7 +83,7 @@ export default function Home() {
           <h2 className="text-3xl font-bold text-gray-900 text-center mb-16">Why Choose Label Maker Pro?</h2>
           <div className="grid md:grid-cols-3 gap-8">
             <div className="bg-white p-8 rounded-lg">
-              <Truck className="h-12 w-12 text-gray-900 mb-4" />
+              <TruckIcon className="h-12 w-12 text-gray-900 mb-4" />
               <h3 className="text-xl font-semibold text-gray-900 mb-2">Multi-Carrier Support</h3>
               <p className="text-gray-600">
                 Generate labels for UPS, FedEx, USPS, Purolator, and Canada Post from one platform.
@@ -77,7 +91,9 @@ export default function Home() {
             </div>
 
             <div className="bg-white p-8 rounded-lg">
-              <Zap className="h-12 w-12 text-gray-900 mb-4" />
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-12 w-12 text-gray-900 mb-4">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 8.689c0-.864.933-1.406 1.683-.977l7.108 4.061a1.125 1.125 0 0 1 0 1.954l-7.108 4.061A1.125 1.125 0 0 1 3 16.811V8.69ZM12.75 8.689c0-.864.933-1.406 1.683-.977l7.108 4.061a1.125 1.125 0 0 1 0 1.954l-7.108 4.061a1.125 1.125 0 0 1-1.683-.977V8.69Z" />
+              </svg>
               <h3 className="text-xl font-semibold text-gray-900 mb-2">Instant Generation</h3>
               <p className="text-gray-600">
                 Create professional shipping labels in seconds. No waiting, no delays.
@@ -85,7 +101,7 @@ export default function Home() {
             </div>
 
             <div className="bg-white p-8 rounded-lg">
-              <Shield className="h-12 w-12 text-gray-900 mb-4" />
+              <ShieldCheckIcon className="h-12 w-12 text-gray-900 mb-4" />
               <h3 className="text-xl font-semibold text-gray-900 mb-2">Secure Platform</h3>
               <p className="text-gray-600">
                 Your data is protected with enterprise-grade security and encryption.
@@ -93,7 +109,7 @@ export default function Home() {
             </div>
 
             <div className="bg-white p-8 rounded-lg">
-              <Users className="h-12 w-12 text-gray-900 mb-4" />
+              <UserGroupIcon className="h-12 w-12 text-gray-900 mb-4" />
               <h3 className="text-xl font-semibold text-gray-900 mb-2">Team Management</h3>
               <p className="text-gray-600">
                 Add team members, set permissions, and manage access from one dashboard.
@@ -101,7 +117,7 @@ export default function Home() {
             </div>
 
             <div className="bg-white p-8 rounded-lg">
-              <CreditCard className="h-12 w-12 text-gray-900 mb-4" />
+              <WalletIcon className="h-12 w-12 text-gray-900 mb-4" />
               <h3 className="text-xl font-semibold text-gray-900 mb-2">Pay As You Go</h3>
               <p className="text-gray-600">
                 Top up your wallet and pay only for the labels you create. No monthly minimums.
@@ -109,7 +125,7 @@ export default function Home() {
             </div>
 
             <div className="bg-white p-8 rounded-lg">
-              <BookOpen className="h-12 w-12 text-gray-900 mb-4" />
+              <BookOpenIcon className="h-12 w-12 text-gray-900 mb-4" />
               <h3 className="text-xl font-semibold text-gray-900 mb-2">Address Book</h3>
               <p className="text-gray-600">
                 Save frequently used addresses for faster label creation. Never type the same address twice.

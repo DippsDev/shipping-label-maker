@@ -389,7 +389,7 @@ export default function AddressesPage() {
                             </div>
                             <button
                                 onClick={() => setShowAddModal(true)}
-                                className="flex items-center gap-2 bg-white text-gray-900 px-6 py-3 rounded-lg hover:bg-gray-100 font-medium transition-colors"
+                                className="flex items-center gap-1 bg-white text-gray-900 px-4 py-2 text-sm md:px-6 md:py-3 md:text-base rounded-lg hover:bg-gray-100 font-medium transition-colors"
                             >
                                 <Plus className="h-5 w-5" />
                                 Add Address

@@ -58,7 +58,7 @@ export default function Features() {
                     <div className="flex justify-between items-center h-16">
                         <Link href="/" className="flex items-center gap-2">
                             <Package className="h-6 w-6 text-gray-900" />
-                            <span className="text-base md:text-lg font-semibold text-gray-900">Label Maker Pro</span>
+                            <span className="text-sm md:text-lg font-semibold text-gray-900">Label Maker Pro</span>
                         </Link>
                         <div className="flex gap-6">
                             <Link href="/" className="text-gray-700 hover:text-gray-900 hover:scale-110 transition-all duration-200">
