@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@aws-sdk/rds-signer": "^3.1003.0",
+    "@heroicons/react": "^2.2.0",
     "@napi-rs/canvas": "^0.1.97",
     "@supabase/supabase-js": "^2.47.10",
     "@vercel/functions": "^3.4.3",
