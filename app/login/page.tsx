@@ -4,10 +4,12 @@ import Link from "next/link";
 import { Package, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "@/lib/supabase-client";
+import { createClient } from "@supabase/supabase-js";
 import { useRouter } from "next/navigation";
 
 export default function Login() {
     const [showPassword, setShowPassword] = useState(false);
+    const [rememberMe, setRememberMe] = useState(true);
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
@@ -19,8 +21,18 @@ export default function Login() {
         setError("");
         setLoading(true);
 
+        // If "Remember me" is unchecked, use a session-only client (sessionStorage)
+        // so the session is cleared when the browser tab closes.
+        const authClient = rememberMe
+            ? supabase
+            : createClient(
+                process.env.NEXT_PUBLIC_SUPABASE_URL!,
+                process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+                { auth: { persistSession: true, storage: typeof window !== "undefined" ? window.sessionStorage : undefined } }
+            );
+
         try {
-            const { data, error: signInError } = await supabase.auth.signInWithPassword({
+            const { data, error: signInError } = await authClient.auth.signInWithPassword({
                 email,
                 password,
             });
@@ -141,9 +153,11 @@ export default function Login() {
                         </div>
 
                         <div className="flex items-center justify-between">
-                            <label className="flex items-center gap-2">
+                            <label className="flex items-center gap-2 cursor-pointer">
                                 <input
                                     type="checkbox"
+                                    checked={rememberMe}
+                                    onChange={(e) => setRememberMe(e.target.checked)}
                                     className="rounded border-gray-300 text-gray-900 focus:ring-gray-900"
                                 />
                                 <span className="text-sm text-gray-700">Remember me</span>

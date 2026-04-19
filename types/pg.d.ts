@@ -10,13 +10,13 @@ declare module 'pg' {
     }
 
     export interface QueryResult {
-        rows: any[];
+        rows: unknown[];
         rowCount: number;
     }
 
     export class Pool {
         constructor(config: PoolConfig);
-        query(sql: string, values?: any[]): Promise<QueryResult>;
+        query(sql: string, values?: unknown[]): Promise<QueryResult>;
         end(): Promise<void>;
     }
 }

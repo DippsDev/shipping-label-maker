@@ -91,9 +91,11 @@ export default function Features() {
                                 <Zap className="h-8 w-8 text-gray-700" />
                                 <h3 className="text-2xl font-bold text-gray-900">Pay-per-Label</h3>
                             </div>
-                            <div className="mb-6">
-                                <span className="text-5xl font-bold text-gray-900">$5</span>
-                                <span className="text-gray-600 ml-2">per label</span>
+                            <div className="mb-6 space-y-2">
+                                <div className="flex items-baseline justify-between border border-gray-100 rounded-lg px-4 py-2 bg-gray-50">
+                                    <span className="text-2xl font-bold text-gray-900">$5</span>
+                                    <span className="text-gray-500 text-sm">per label</span>
+                                </div>
                             </div>
                             <p className="text-gray-600 mb-6">
                                 Perfect for occasional use. Pay only for what you need.
@@ -131,11 +133,14 @@ export default function Features() {
                                 <Repeat className="h-8 w-8 text-gray-900" />
                                 <h3 className="text-2xl font-bold text-gray-900">Subscription</h3>
                             </div>
-                            <div className="mb-6">
-                                <span className="text-5xl font-bold text-gray-900">$120</span>
-                                <span className="text-gray-600 ml-2">per month</span>
-                                <div className="mt-2 text-sm text-gray-600">
-                                    or $1,450/year (save $90)
+                            <div className="mb-6 space-y-2">
+                                <div className="flex items-baseline justify-between border border-gray-800 rounded-lg px-4 py-2 bg-gray-50">
+                                    <span className="text-2xl font-bold text-gray-900">$120</span>
+                                    <span className="text-gray-500 text-sm">per month</span>
+                                </div>
+                                <div className="flex items-baseline justify-between border border-gray-800 rounded-lg px-4 py-2 bg-gray-50">
+                                    <span className="text-2xl font-bold text-gray-900">$1,450</span>
+                                    <span className="text-gray-500 text-sm">per year &mdash; save $90</span>
                                 </div>
                             </div>
                             <p className="text-gray-600 mb-6">
@@ -173,12 +178,14 @@ export default function Features() {
                                 <CreditCard className="h-8 w-8 text-gray-700" />
                                 <h3 className="text-2xl font-bold text-gray-900">Prepaid Credits</h3>
                             </div>
-                            <div className="mb-6">
-                                <div className="text-3xl font-bold text-gray-900 mb-2">
-                                    $50 for 10 labels
+                            <div className="mb-6 space-y-2">
+                                <div className="flex items-baseline justify-between border border-gray-100 rounded-lg px-4 py-2 bg-gray-50">
+                                    <span className="text-2xl font-bold text-gray-900">$50</span>
+                                    <span className="text-gray-500 text-sm">10 labels &mdash; $5 each</span>
                                 </div>
-                                <div className="text-2xl font-bold text-gray-900">
-                                    $500 for 100 labels
+                                <div className="flex items-baseline justify-between border border-gray-100 rounded-lg px-4 py-2 bg-gray-50">
+                                    <span className="text-2xl font-bold text-gray-900">$500</span>
+                                    <span className="text-gray-500 text-sm">100 labels &mdash; $5 each</span>
                                 </div>
                             </div>
                             <p className="text-gray-600 mb-6">
