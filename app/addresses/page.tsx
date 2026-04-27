@@ -5,6 +5,7 @@ import { Package, LayoutDashboard, Tag, History, Wallet, MapPin, Search, Setting
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase-client";
 import { useRouter } from "next/navigation";
+import type { Session } from '@supabase/supabase-js';
 
 interface Address {
     id: string;
@@ -21,6 +22,17 @@ interface Address {
     usageCount: number;
 }
 
+interface AddressFormData {
+    name: string;
+    phone: string;
+    addressLine1: string;
+    addressLine2: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    country: string;
+}
+
 export default function AddressesPage() {
     const [showAccountMenu, setShowAccountMenu] = useState(false);
     const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -29,7 +41,7 @@ export default function AddressesPage() {
     const [searchQuery, setSearchQuery] = useState("");
     const [addresses, setAddresses] = useState<Address[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState<AddressFormData>({
         name: "",
         phone: "",
         addressLine1: "",
@@ -40,7 +52,7 @@ export default function AddressesPage() {
         country: "United States"
     });
     const menuRef = useRef<HTMLDivElement>(null);
-    const [session, setSession] = useState<any>(null);
+    const [session, setSession] = useState<Session | null>(null);
     const [isLoadingSession, setIsLoadingSession] = useState(true);
     const router = useRouter();
 

@@ -8,6 +8,13 @@ const getSupabase = () => {
     );
 };
 
+const getSupabaseAdmin = () => {
+    return createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+};
+
 const DEFAULT_BALANCE = 100.00;
 
 // Get wallet balance
@@ -29,7 +36,9 @@ export async function GET(request: NextRequest) {
             const id = `wallet_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
             const now = Date.now();
 
-            const { data: newWallet, error: insertError } = await supabase
+            // Use service role key to bypass RLS for wallet creation
+            const supabaseAdmin = getSupabaseAdmin();
+            const { data: newWallet, error: insertError } = await supabaseAdmin
                 .from('wallet')
                 .insert({
                     id,

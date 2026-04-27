@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
 
         // Try to get address count from the address API
         try {
-            const addressResponse = await fetch(`${request.nextUrl.origin}/api/address?userId=${userId}`);
+            const addressResponse = await fetch(`${request.nextUrl.origin}/api/addresses?userId=${userId}`);
             if (addressResponse.ok) {
                 const addressData = await addressResponse.json();
                 addressesCount = Array.isArray(addressData) ? addressData.length : 0;
