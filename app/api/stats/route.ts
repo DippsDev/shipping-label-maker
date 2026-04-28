@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
 
 // Get dashboard stats for a user
 export async function GET(request: NextRequest) {
@@ -11,17 +12,27 @@ export async function GET(request: NextRequest) {
         let mostUsedCarrier = 'N/A';
         let walletBalance = 0.00;
 
-        // Try to get label count and most used carrier from the labels API
+        // Create Supabase client for direct database access
+        const supabase = createClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.SUPABASE_SERVICE_ROLE_KEY!
+        );
+
+        // Direct database queries instead of internal API calls
         try {
-            const labelsResponse = await fetch(`${request.nextUrl.origin}/api/labels?userId=${userId}`);
-            if (labelsResponse.ok) {
-                const labelsData = await labelsResponse.json();
-                labelsCount = labelsData.count || 0;
+            // Get labels count and most used carrier
+            const { data: labelsData, error: labelsError } = await supabase
+                .from('labels')
+                .select('carrier')
+                .eq('userId', userId);
+
+            if (!labelsError && labelsData) {
+                labelsCount = labelsData.length;
 
                 // Calculate most used carrier
-                if (labelsData.labels && labelsData.labels.length > 0) {
+                if (labelsData.length > 0) {
                     const carrierCounts: Record<string, number> = {};
-                    labelsData.labels.forEach((label: any) => {
+                    labelsData.forEach((label) => {
                         carrierCounts[label.carrier] = (carrierCounts[label.carrier] || 0) + 1;
                     });
 
@@ -33,31 +44,36 @@ export async function GET(request: NextRequest) {
                             mostUsedCarrier = carrier;
                         }
                     });
-                } else {
-                    mostUsedCarrier = 'N/A';
                 }
             }
         } catch (error) {
-            console.error('Error fetching labels count:', error);
+            console.error('Error fetching labels stats:', error);
         }
 
-        // Try to get address count from the address API
         try {
-            const addressResponse = await fetch(`${request.nextUrl.origin}/api/addresses?userId=${userId}`);
-            if (addressResponse.ok) {
-                const addressData = await addressResponse.json();
-                addressesCount = Array.isArray(addressData) ? addressData.length : 0;
+            // Get addresses count
+            const { count, error: addressError } = await supabase
+                .from('address')
+                .select('*', { count: 'exact', head: true })
+                .eq('userId', userId);
+
+            if (!addressError) {
+                addressesCount = count || 0;
             }
         } catch (error) {
             console.error('Error fetching address count:', error);
         }
 
-        // Try to get wallet balance from the wallet API
         try {
-            const walletResponse = await fetch(`${request.nextUrl.origin}/api/wallet?userId=${userId}`);
-            if (walletResponse.ok) {
-                const walletData = await walletResponse.json();
-                walletBalance = walletData.balance || 0.00;
+            // Get wallet balance
+            const { data: walletData, error: walletError } = await supabase
+                .from('wallet')
+                .select('balance')
+                .eq('userId', userId)
+                .single();
+
+            if (!walletError && walletData) {
+                walletBalance = parseFloat(walletData.balance) || 0.00;
             }
         } catch (error) {
             console.error('Error fetching wallet balance:', error);

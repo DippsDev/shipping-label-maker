@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase-server";
-import { createPool } from "@/lib/db";
+import { createClient } from "@supabase/supabase-js";
+
+const getSupabaseAdmin = () =>
+    createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
 
 export async function PATCH(
     request: NextRequest,
@@ -8,99 +14,50 @@ export async function PATCH(
 ) {
     const supabase = await createServerClient();
     const { data: { session } } = await supabase.auth.getSession();
-
-    // Bypass auth for testing
     const userId = session?.user?.id || "test-user";
 
     try {
         const { id } = await params;
         const body = await request.json();
-        const pool = createPool();
+        const db = getSupabaseAdmin();
 
-        if (!pool) {
-            return NextResponse.json({ error: "Database not available" }, { status: 500 });
-        }
+        // Check address belongs to user
+        const { data: existing } = await db
+            .from('address')
+            .select('id')
+            .eq('id', id)
+            .eq('userId', userId)
+            .single();
 
-        // Check if address exists
-        const checkResult = await pool.query(
-            `SELECT * FROM address WHERE id = $1 AND "userId" = $2`,
-            [id, userId]
-        );
-
-        if (checkResult.rows.length === 0) {
+        if (!existing) {
             return NextResponse.json({ error: "Address not found" }, { status: 404 });
         }
 
-        const updates: string[] = [];
-        const values: any[] = [];
-        let paramIndex = 1;
-
-        if (body.isSaved !== undefined) {
-            updates.push(`"isSaved" = $${paramIndex++}`);
-            values.push(body.isSaved);
+        const updates: Record<string, unknown> = { updatedAt: Date.now() };
+        const fields = ['isSaved', 'name', 'phone', 'addressLine1', 'addressLine2', 'city', 'state', 'zipCode', 'country'];
+        for (const field of fields) {
+            if (body[field] !== undefined) {
+                updates[field] = body[field] ?? null;
+            }
         }
 
-        if (body.name !== undefined) {
-            updates.push(`name = $${paramIndex++}`);
-            values.push(body.name);
+        const { data, error } = await db
+            .from('address')
+            .update(updates)
+            .eq('id', id)
+            .eq('userId', userId)
+            .select()
+            .single();
+
+        if (error) {
+            console.error("Error updating address:", error);
+            return NextResponse.json({ error: "Failed to update address" }, { status: 500 });
         }
 
-        if (body.phone !== undefined) {
-            updates.push(`phone = $${paramIndex++}`);
-            values.push(body.phone || null);
-        }
-
-        if (body.addressLine1 !== undefined) {
-            updates.push(`"addressLine1" = $${paramIndex++}`);
-            values.push(body.addressLine1);
-        }
-
-        if (body.addressLine2 !== undefined) {
-            updates.push(`"addressLine2" = $${paramIndex++}`);
-            values.push(body.addressLine2 || null);
-        }
-
-        if (body.city !== undefined) {
-            updates.push(`city = $${paramIndex++}`);
-            values.push(body.city);
-        }
-
-        if (body.state !== undefined) {
-            updates.push(`state = $${paramIndex++}`);
-            values.push(body.state);
-        }
-
-        if (body.zipCode !== undefined) {
-            updates.push(`"zipCode" = $${paramIndex++}`);
-            values.push(body.zipCode);
-        }
-
-        if (body.country !== undefined) {
-            updates.push(`country = $${paramIndex++}`);
-            values.push(body.country);
-        }
-
-        updates.push(`"updatedAt" = $${paramIndex++}`);
-        values.push(Date.now());
-
-        values.push(id, userId);
-
-        await pool.query(
-            `UPDATE address SET ${updates.join(", ")} WHERE id = $${paramIndex++} AND "userId" = $${paramIndex++}`,
-            values
-        );
-
-        const result = await pool.query(
-            `SELECT * FROM address WHERE id = $1`,
-            [id]
-        );
-        return NextResponse.json(result.rows[0]);
+        return NextResponse.json(data);
     } catch (error) {
         console.error("Error updating address:", error);
-        return NextResponse.json(
-            { error: "Failed to update address" },
-            { status: 500 }
-        );
+        return NextResponse.json({ error: "Failed to update address" }, { status: 500 });
     }
 }
 
@@ -110,33 +67,30 @@ export async function DELETE(
 ) {
     const supabase = await createServerClient();
     const { data: { session } } = await supabase.auth.getSession();
-
-    // Bypass auth for testing
     const userId = session?.user?.id || "test-user";
 
     try {
         const { id } = await params;
-        const pool = createPool();
+        const db = getSupabaseAdmin();
 
-        if (!pool) {
-            return NextResponse.json({ error: "Database not available" }, { status: 500 });
+        const { error, count } = await db
+            .from('address')
+            .delete({ count: 'exact' })
+            .eq('id', id)
+            .eq('userId', userId);
+
+        if (error) {
+            console.error("Error deleting address:", error);
+            return NextResponse.json({ error: "Failed to delete address" }, { status: 500 });
         }
 
-        const result = await pool.query(
-            `DELETE FROM address WHERE id = $1 AND "userId" = $2`,
-            [id, userId]
-        );
-
-        if (result.rowCount === 0) {
+        if (count === 0) {
             return NextResponse.json({ error: "Address not found" }, { status: 404 });
         }
 
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error("Error deleting address:", error);
-        return NextResponse.json(
-            { error: "Failed to delete address" },
-            { status: 500 }
-        );
+        return NextResponse.json({ error: "Failed to delete address" }, { status: 500 });
     }
 }

@@ -10,6 +10,7 @@ export default function WalletPage() {
     const [showAccountMenu, setShowAccountMenu] = useState(false);
     const [showMobileMenu, setShowMobileMenu] = useState(false);
     const [showTopUpModal, setShowTopUpModal] = useState(false);
+    const [walletBalance, setWalletBalance] = useState(0.00);
     const menuRef = useRef<HTMLDivElement>(null);
     const { data: session, isPending } = useSession();
     const router = useRouter();
@@ -36,6 +37,19 @@ export default function WalletPage() {
             router.push("/login");
         }
     }, [session, isPending, router]);
+
+    useEffect(() => {
+        if (!session) return;
+        const userId = session.user?.id || 'guest';
+        fetch(`/api/wallet?userId=${userId}`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.balance !== undefined) {
+                    setWalletBalance(parseFloat(data.balance) || 0);
+                }
+            })
+            .catch(err => console.error('Failed to fetch wallet balance:', err));
+    }, [session]);
 
     const handleSignOut = async () => {
         await signOut();
@@ -209,7 +223,7 @@ export default function WalletPage() {
                                 <p className="text-sm text-gray-600">Current Balance</p>
                                 <Wallet className="h-5 w-5 text-gray-400" />
                             </div>
-                            <p className="text-3xl font-semibold text-gray-900 mb-1">$0.00</p>
+                            <p className="text-3xl font-semibold text-gray-900 mb-1">${walletBalance.toFixed(2)}</p>
                             <p className="text-xs text-gray-500">Available for labels</p>
                         </div>
 
