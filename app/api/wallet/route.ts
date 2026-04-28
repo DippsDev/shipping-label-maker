@@ -15,7 +15,7 @@ const getSupabaseAdmin = () => {
     );
 };
 
-const DEFAULT_BALANCE = 100.00;
+const DEFAULT_BALANCE = 0.00;
 
 // Get wallet balance
 export async function GET(request: NextRequest) {

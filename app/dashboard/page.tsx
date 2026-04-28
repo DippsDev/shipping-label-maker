@@ -12,7 +12,7 @@ export default function Dashboard() {
     const [stats, setStats] = useState({
         totalLabels: 0,
         savedAddresses: 0,
-        walletBalance: 100.00,
+        walletBalance: 0.00,
         mostUsedCarrier: 'N/A',
     });
     const menuRef = useRef<HTMLDivElement>(null);
