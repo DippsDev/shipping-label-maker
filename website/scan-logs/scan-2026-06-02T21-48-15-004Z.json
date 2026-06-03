@@ -1,0 +1,45 @@
+{
+  "timestamp": "2026-06-02T21:48:15.009Z",
+  "fileName": "USPS1.png",
+  "fileSize": 282523,
+  "qrCodesFound": 2,
+  "barcodes": [
+    {
+      "name": "ship-to-qr",
+      "format": "DataMatrix",
+      "data": "(420)76133(94)34636208303361905241"
+    },
+    {
+      "name": "full",
+      "format": "PDF417",
+      "data": "v0901¾c<NUL><NUL>45<DC4>2<NUL><SYN><ETB><NUL><FF>%5<SOH><NUL><SOH>±lí<DC1>Z<SOH><NUL><NUL><NUL><NUL><NUL>0Ò\\¹,¯-<ETX><NUL><NUL><9(<STX><NUL><NUL>õÈé¹<DC1><<<U+8F>°7WÐ<U+9D><EOT>Þô<U+82>[®<SUB>âª¦<U+94>å<US><BS>ÂìÀäD`õS­<U+94>õ¡­¶<U+82>àÌ%<U+91>¤<FF>×úÞ6BS*Ôé¢Ià<BEL><FF>J<U+8F>Nº¤b?"
+    }
+  ],
+  "gs1Extracted": {
+    "zip": "76133",
+    "trackingNumber": "34636208303361905241"
+  },
+  "easyPostData": {
+    "shipToName": "",
+    "shipToAddress": "",
+    "shipToAddress2": "",
+    "shipToCity": "",
+    "shipToState": "",
+    "shipToZip": "",
+    "shipToCountry": "",
+    "service": "",
+    "weight": "",
+    "easyPostStatus": "unknown"
+  },
+  "shipToBlockExtracted": "fh",
+  "addressOcrSnippet": "0.10 CUBIC ZONE 1\nUSPS GROUND ADVANTAGE\nE\nHIP TO:\nUSPS TRACKING #\n",
+  "ocrTextSnippet": "US POSTAGE PAID IMI\n2026-01-07 , e easypost\ncoe | ER |\nC7767182 / Aud 0H\nCommercial | . ND CRA TY\n0.10 CUBIC ZONE 1 0901000025534\nUSPS GROUND ADVANTAGE™\n0002\nSHIP TO:\nfh\nUSPS TRACKING #\n9434 6362 0830 3361 9052 41\n",
+  "extracted": {
+    "carrier": "USPS",
+    "service": "Ground Advantage",
+    "trackingNumber": "34636208303361905241",
+    "easyPostStatus": "unknown",
+    "shipToName": "HIP TO:",
+    "shipToZip": "76133"
+  }
+}
