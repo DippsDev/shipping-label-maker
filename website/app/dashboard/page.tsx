@@ -132,16 +132,16 @@ export default function Dashboard() {
                             </Link>
                         </li>
                         <li>
-                            <Link href="/wallet" className="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">
-                                <Wallet className="h-5 w-5" />
-                                <span>Wallet</span>
-                            </Link>
-                        </li>
-                        <li>
                             <Link href="/addresses" className="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">
                                 <MapPin className="h-5 w-5" />
                                 <span>Addresses</span>
                             </Link>
+                        </li>
+                        <li>
+                            <span className="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-300 cursor-not-allowed select-none">
+                                <Wallet className="h-5 w-5" />
+                                <span>Wallet</span>
+                            </span>
                         </li>
                     </ul>
                 </nav>
@@ -222,15 +222,6 @@ export default function Dashboard() {
                             </div>
                             <p className="text-3xl font-bold text-gray-900">{stats.totalLabels}</p>
                             <p className="text-sm text-gray-600 mt-2">Generated this month</p>
-                        </div>
-
-                        <div className="bg-white p-6 rounded-lg border border-gray-200">
-                            <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-lg font-semibold text-gray-900">Wallet Balance</h3>
-                                <Wallet className="h-8 w-8 text-gray-600" />
-                            </div>
-                            <p className="text-3xl font-bold text-gray-900">${stats.walletBalance.toFixed(2)}</p>
-                            <Link href="/wallet" className="text-sm text-blue-600 mt-2 hover:underline">Top up now</Link>
                         </div>
 
                         <div className="bg-white p-6 rounded-lg border border-gray-200">

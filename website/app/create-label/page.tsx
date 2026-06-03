@@ -598,16 +598,16 @@ export default function CreateLabel() {
                             </Link>
                         </li>
                         <li>
-                            <Link href="/wallet" className="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">
-                                <Wallet className="h-5 w-5" />
-                                <span>Wallet</span>
-                            </Link>
-                        </li>
-                        <li>
                             <Link href="/addresses" className="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">
                                 <MapPin className="h-5 w-5" />
                                 <span>Addresses</span>
                             </Link>
+                        </li>
+                        <li>
+                            <span className="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-300 cursor-not-allowed select-none">
+                                <Wallet className="h-5 w-5" />
+                                <span>Wallet</span>
+                            </span>
                         </li>
                     </ul>
                 </nav>
@@ -1273,14 +1273,6 @@ export default function CreateLabel() {
                                                 <Lock className="h-4 w-4" />
                                                 {isPurchasing ? 'Processing…' : `Pay & Download ($${LABEL_PRICE.toFixed(2)})`}
                                             </button>
-                                            {walletBalance !== null && (
-                                                <p className="text-xs text-center mt-1.5 text-gray-500">
-                                                    Wallet balance: <span className={walletBalance < LABEL_PRICE ? 'text-red-500 font-medium' : 'text-gray-700 font-medium'}>${walletBalance.toFixed(2)}</span>
-                                                    {walletBalance < LABEL_PRICE && (
-                                                        <> — <Link href="/wallet" className="text-blue-600 underline">Top up</Link></>
-                                                    )}
-                                                </p>
-                                            )}
                                         </div>
                                     )}
 

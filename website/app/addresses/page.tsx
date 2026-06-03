@@ -280,16 +280,16 @@ export default function AddressesPage() {
                             </Link>
                         </li>
                         <li>
-                            <Link href="/wallet" className="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">
-                                <Wallet className="h-5 w-5" />
-                                <span>Wallet</span>
-                            </Link>
-                        </li>
-                        <li>
                             <Link href="/addresses" className="flex items-center gap-3 px-3 py-2 rounded-lg bg-gray-100 text-gray-900 transition-colors">
                                 <MapPin className="h-5 w-5" />
                                 <span>Addresses</span>
                             </Link>
+                        </li>
+                        <li>
+                            <span className="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-300 cursor-not-allowed select-none">
+                                <Wallet className="h-5 w-5" />
+                                <span>Wallet</span>
+                            </span>
                         </li>
                     </ul>
                 </nav>
