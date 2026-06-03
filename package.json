@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "npm --prefix website run dev",
-    "build": "npm --prefix website run build",
+    "build": "npm --prefix website run build && cp -r website/public/. public/",
     "start": "npm --prefix website run start",
     "lint": "npm --prefix website run lint"
   },
