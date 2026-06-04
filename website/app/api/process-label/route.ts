@@ -107,19 +107,52 @@ function parseGS1(data: string): Record<string, string> {
     return result;
 }
 
+// USPS tracking prefix → service name (first 4 digits of the full 22-digit IMpb number)
+const USPS_TRACKING_SERVICE: Record<string, string> = {
+    '9400': 'Ground Advantage', '9410': 'Ground Advantage',
+    '9420': 'Ground Advantage', '9430': 'Ground Advantage',
+    '9434': 'Ground Advantage', '9440': 'Ground Advantage',
+    '9205': 'Priority Mail',   '9202': 'Priority Mail',
+    '9208': 'Priority Mail',   '9210': 'Priority Mail',
+    '9300': 'Priority Mail Express', '9308': 'Priority Mail Express',
+    '9261': 'Ground Advantage', '9274': 'Priority Mail',
+};
+
+function inferUSPSService(fullTracking: string): string {
+    return USPS_TRACKING_SERVICE[fullTracking.slice(0, 4)] ?? '';
+}
+
 function extractFromBarcodes(barcodes: { format: string; data: string }[]): {
     zip: string;
     trackingNumber: string;
+    carrierHint: string;
+    serviceHint: string;
 } {
     let zip = '';
     let trackingNumber = '';
+    let carrierHint = '';
+    let serviceHint = '';
 
     for (const { data } of barcodes) {
         const gs1 = parseGS1(data);
+
         if (!zip && gs1['420']) zip = gs1['420'].slice(0, 5);
-        if (!trackingNumber && gs1['94']) trackingNumber = gs1['94'].replace(/\s/g, '');
+
+        if (!trackingNumber && gs1['94']) {
+            const ai94 = gs1['94'].replace(/\s/g, '');
+            // USPS IMpb: AI 420 (destination ZIP) co-present with AI 94 → USPS label.
+            // Reconstruct the full 22-digit tracking number by restoring the "94" prefix.
+            if (gs1['420']) {
+                carrierHint = 'USPS';
+                const fullTracking = '94' + ai94;
+                trackingNumber = fullTracking;
+                serviceHint = inferUSPSService(fullTracking);
+            } else {
+                trackingNumber = ai94;
+            }
+        }
     }
-    return { zip, trackingNumber };
+    return { zip, trackingNumber, carrierHint, serviceHint };
 }
 
 // ---------------------------------------------------------------------------
@@ -207,13 +240,11 @@ export async function POST(request: NextRequest) {
         const barcodeText = qrResults.map(r => r.data).join('\n');
 
         const gs1Data = extractFromBarcodes(qrResults);
-        const carrier = detectCarrier(barcodeText);
-        const service = detectService(barcodeText, carrier);
 
-        // Prefer GS1 tracking number (DataMatrix AI 94), fall back to pattern match
+        // GS1 hints are the most reliable source (carrier/service inferred from barcode structure)
+        const carrier = gs1Data.carrierHint || detectCarrier(barcodeText);
         const trackingNumber = gs1Data.trackingNumber || extractTrackingNumber(barcodeText, carrier);
-
-        // ZIP from GS1 DataMatrix AI 420
+        const service = gs1Data.serviceHint || detectService(barcodeText, carrier);
         const zip = gs1Data.zip;
 
         const result: Record<string, string> = {};
