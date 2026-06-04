@@ -607,7 +607,10 @@ async function generateUSPSLabel(data: Record<string, any>): Promise<Canvas> {
     ctx.fillText(`REF: ${data.customReference}`, 30, extraLineY);
   }
 
-  if (!data.removeWeight && data.weight) {
+  // For services with a postage block (dividerX > 0), weight is already rendered
+  // inside that block via weightZone. Only add the secondary weight text for
+  // services without a postage block (Priority Mail, First Class, etc.).
+  if (!data.removeWeight && data.weight && L.dividerX === 0) {
     ctx.font = 'bold 20px HelveticaBold';
     ctx.fillText(`${data.weight} LB`, L.weightX, L.weightY);
   }
