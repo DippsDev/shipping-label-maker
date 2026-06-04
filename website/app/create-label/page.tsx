@@ -51,8 +51,41 @@ export default function CreateLabel() {
     const [upsZone, setUpsZone] = useState("");
     const [sortingCode, setSortingCode] = useState("");
 
+    // Label options
+    const [litMode, setLitMode] = useState(false);
+    const [removeWeight, setRemoveWeight] = useState(false);
+    const [removeRG, setRemoveRG] = useState(false);
+    const [scrambleTracking, setScrambleTracking] = useState(false);
+    const [customPhoneEnabled, setCustomPhoneEnabled] = useState(false);
+    const [customPhoneValue, setCustomPhoneValue] = useState("");
+    const [customReferenceEnabled, setCustomReferenceEnabled] = useState(false);
+    const [customReferenceValue, setCustomReferenceValue] = useState("");
+
     const RANDOM_FIRST = ["James","Maria","David","Sarah","Michael","Jessica","Robert","Ashley","William","Emily","Daniel","Megan","Christopher","Amanda","Matthew","Stephanie","Joshua","Nicole","Andrew","Samantha"];
     const RANDOM_LAST  = ["Smith","Johnson","Williams","Brown","Jones","Garcia","Miller","Davis","Wilson","Taylor","Anderson","Thomas","Jackson","White","Harris","Martin","Thompson","Robinson","Clark","Lewis"];
+    const RANDOM_STREETS = ["Main St","Oak Ave","Maple Dr","Pine Rd","Elm St","Cedar Ln","Birch Blvd","Willow Way","Spruce Ct","Walnut St","Park Ave","Lake Dr","River Rd","Hill St","Forest Blvd"];
+    const RANDOM_US_LOCS = [
+        { city: "New York",     state: "NY", zip: "10001" },
+        { city: "Los Angeles",  state: "CA", zip: "90001" },
+        { city: "Chicago",      state: "IL", zip: "60601" },
+        { city: "Houston",      state: "TX", zip: "77001" },
+        { city: "Phoenix",      state: "AZ", zip: "85001" },
+        { city: "Philadelphia", state: "PA", zip: "19101" },
+        { city: "San Antonio",  state: "TX", zip: "78201" },
+        { city: "San Diego",    state: "CA", zip: "92101" },
+        { city: "Dallas",       state: "TX", zip: "75201" },
+        { city: "Jacksonville", state: "FL", zip: "32201" },
+    ];
+    const RANDOM_CA_LOCS = [
+        { city: "Toronto",      state: "ON", zip: "M5V 2T6" },
+        { city: "Vancouver",    state: "BC", zip: "V6B 1A1" },
+        { city: "Montreal",     state: "QC", zip: "H3A 1A1" },
+        { city: "Calgary",      state: "AB", zip: "T2P 1J9" },
+        { city: "Ottawa",       state: "ON", zip: "K1A 0A9" },
+        { city: "Edmonton",     state: "AB", zip: "T5J 1N9" },
+        { city: "Winnipeg",     state: "MB", zip: "R3C 1A5" },
+        { city: "Hamilton",     state: "ON", zip: "L8R 1B1" },
+    ];
     const generateRandomName = () => {
         const first = RANDOM_FIRST[Math.floor(Math.random() * RANDOM_FIRST.length)];
         const last  = RANDOM_LAST[Math.floor(Math.random() * RANDOM_LAST.length)];
@@ -60,6 +93,7 @@ export default function CreateLabel() {
     };
 
     const menuRef = useRef<HTMLDivElement>(null);
+    const generateBtnRef = useRef<HTMLButtonElement>(null);
     const { data: session, isPending } = useSession();
     const router = useRouter();
 
@@ -158,6 +192,16 @@ export default function CreateLabel() {
         setUpsZone("");
         setSortingCode("");
 
+        // Reset label options
+        setLitMode(false);
+        setRemoveWeight(false);
+        setRemoveRG(false);
+        setScrambleTracking(false);
+        setCustomPhoneEnabled(false);
+        setCustomPhoneValue("");
+        setCustomReferenceEnabled(false);
+        setCustomReferenceValue("");
+
         // Reset Ship From
         setReturnName("");
         setReturnAddress("");
@@ -225,7 +269,48 @@ export default function CreateLabel() {
             if (data.weight) setWeight(data.weight);
             if (data.phone) setPhone(data.phone);
 
+            // Fill any required fields still empty with random data
+            const finalCarrier = data.carrier || selectedCarrier;
+            const isCA = finalCarrier === 'Canada Post' || finalCarrier === 'Purolator';
+            const locPool = isCA ? RANDOM_CA_LOCS : RANDOM_US_LOCS;
+            const pick = <T,>(arr: T[]) => arr[Math.floor(Math.random() * arr.length)];
+            const rInt = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
+            const rDigits = (n: number) => Array.from({ length: n }, () => rInt(0, 9)).join('');
+            const rAlnum = (n: number) => Array.from({ length: n }, () => '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'[rInt(0, 35)]).join('');
+
+            if (!data.shipToName) setShipToName(`${pick(RANDOM_FIRST)} ${pick(RANDOM_LAST)}`);
+            if (!data.shipToAddress) setShipToAddress(`${rInt(100, 9999)} ${pick(RANDOM_STREETS)}`);
+            if (!data.shipToCity || !data.shipToState || !data.shipToZip) {
+                const loc = pick(locPool);
+                if (!data.shipToCity)  setShipToCity(loc.city);
+                if (!data.shipToState) setShipToState(loc.state);
+                if (!data.shipToZip)   setShipToZip(loc.zip);
+            }
+            if (!data.trackingNumber) {
+                const tn = finalCarrier === 'UPS'         ? `1Z${rAlnum(16)}`
+                         : finalCarrier === 'FedEx'       ? rDigits(12)
+                         : finalCarrier === 'USPS'        ? `9400111899${rDigits(12)}`
+                         : finalCarrier === 'Canada Post' ? `07${rDigits(21)}`
+                         : finalCarrier === 'Purolator'   ? `PUR${rAlnum(9)}`
+                         : rDigits(22);
+                setTrackingNumber(tn);
+            }
+            if (!data.weight && (finalCarrier === 'UPS' || finalCarrier === 'FedEx' || finalCarrier === 'Purolator')) {
+                setWeight((rInt(5, 50) / 10).toFixed(1));
+            }
+
+            // Return address is never on the label — always fill with random data
+            const retLoc = pick(locPool);
+            setReturnName(`${pick(RANDOM_FIRST)} ${pick(RANDOM_LAST)}`);
+            setReturnAddress(`${rInt(100, 9999)} ${pick(RANDOM_STREETS)}`);
+            setReturnCity(retLoc.city);
+            setReturnState(retLoc.state);
+            setReturnZip(retLoc.zip);
+
             setGenerationSuccess("Label processed successfully! Review the auto-filled information.");
+
+            // Scroll to Generate Label button
+            setTimeout(() => generateBtnRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 150);
         } catch (error) {
             console.error('Label processing error:', error);
             setGenerationError(
@@ -352,6 +437,12 @@ export default function CreateLabel() {
                 shipToPostal: shipToZip,
                 weight,
                 sortingCode,
+                litMode,
+                removeWeight,
+                removeRG,
+                scrambleTracking,
+                customPhone: customPhoneEnabled && customPhoneValue ? customPhoneValue : undefined,
+                customReference: customReferenceEnabled && customReferenceValue ? customReferenceValue : undefined,
             };
 
             // Deduct wallet and get single-use token
@@ -457,6 +548,12 @@ export default function CreateLabel() {
                 shipToPostal: shipToZip,
                 weight,
                 sortingCode,
+                litMode,
+                removeWeight,
+                removeRG,
+                scrambleTracking,
+                customPhone: customPhoneEnabled && customPhoneValue ? customPhoneValue : undefined,
+                customReference: customReferenceEnabled && customReferenceValue ? customReferenceValue : undefined,
                 fileName: fileName || `label_${trackingNumber}`,
                 hasOriginalLabel: uploadedLabel !== null,
                 preview: true,
@@ -1045,7 +1142,7 @@ export default function CreateLabel() {
 
                                 <div className="space-y-4">
                                     <label className="flex items-center gap-2">
-                                        <input type="checkbox" className="rounded" />
+                                        <input type="checkbox" className="rounded" defaultChecked={false} />
                                         <span className="text-sm text-gray-700">Use custom return address</span>
                                     </label>
 
@@ -1090,34 +1187,52 @@ export default function CreateLabel() {
                                         <label className="block text-sm font-medium text-gray-900 mb-2">Label Options</label>
                                         <div className="grid md:grid-cols-2 gap-3">
                                             <label className="flex items-center gap-2">
-                                                <input type="checkbox" className="rounded" />
+                                                <input type="checkbox" className="rounded" checked={litMode} onChange={e => setLitMode(e.target.checked)} />
                                                 <span className="text-sm text-gray-700">LIT Mode</span>
                                             </label>
                                             <label className="flex items-center gap-2">
-                                                <input type="checkbox" className="rounded" />
+                                                <input type="checkbox" className="rounded" checked={removeWeight} onChange={e => setRemoveWeight(e.target.checked)} />
                                                 <span className="text-sm text-gray-700">Remove Weight</span>
                                             </label>
                                             <label className="flex items-center gap-2">
-                                                <input type="checkbox" className="rounded" />
+                                                <input type="checkbox" className="rounded" checked={removeRG} onChange={e => setRemoveRG(e.target.checked)} />
                                                 <span className="text-sm text-gray-700">Remove RG</span>
                                             </label>
                                             <label className="flex items-center gap-2">
-                                                <input type="checkbox" className="rounded" />
-                                                <span className="text-sm text-gray-700">Custom Maxicode</span>
-                                            </label>
-                                            <label className="flex items-center gap-2">
-                                                <input type="checkbox" className="rounded" />
-                                                <span className="text-sm text-gray-700">Custom Phone Number</span>
-                                            </label>
-                                            <label className="flex items-center gap-2">
-                                                <input type="checkbox" className="rounded" />
+                                                <input type="checkbox" className="rounded" checked={scrambleTracking} onChange={e => setScrambleTracking(e.target.checked)} />
                                                 <span className="text-sm text-gray-700">Scramble Tracking #</span>
                                             </label>
                                             <label className="flex items-center gap-2">
-                                                <input type="checkbox" className="rounded" />
+                                                <input type="checkbox" className="rounded" checked={customPhoneEnabled} onChange={e => setCustomPhoneEnabled(e.target.checked)} />
+                                                <span className="text-sm text-gray-700">Custom Phone Number</span>
+                                            </label>
+                                            <label className="flex items-center gap-2">
+                                                <input type="checkbox" className="rounded" checked={customReferenceEnabled} onChange={e => setCustomReferenceEnabled(e.target.checked)} />
                                                 <span className="text-sm text-gray-700">Custom Reference</span>
                                             </label>
                                         </div>
+                                        {customPhoneEnabled && (
+                                            <div className="mt-3">
+                                                <input
+                                                    type="tel"
+                                                    placeholder="Phone number to print on label"
+                                                    value={customPhoneValue}
+                                                    onChange={e => setCustomPhoneValue(e.target.value)}
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900 text-sm"
+                                                />
+                                            </div>
+                                        )}
+                                        {customReferenceEnabled && (
+                                            <div className="mt-3">
+                                                <input
+                                                    type="text"
+                                                    placeholder="Reference number or text"
+                                                    value={customReferenceValue}
+                                                    onChange={e => setCustomReferenceValue(e.target.value)}
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900 text-sm"
+                                                />
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -1172,12 +1287,25 @@ export default function CreateLabel() {
                                     🔄 Reset Form
                                 </button>
                                 <button
+                                    ref={generateBtnRef}
                                     onClick={handleGenerateLabel}
-                                    disabled={isGenerating}
-                                    className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-medium text-sm md:text-base ${isGenerating ? 'bg-gray-600 cursor-wait text-white' : 'bg-gray-900 hover:bg-gray-800 text-white'}`}
+                                    disabled={isGenerating || isProcessingLabel}
+                                    className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-medium text-sm md:text-base transition-colors ${(isGenerating || isProcessingLabel) ? 'bg-gray-600 cursor-not-allowed text-white' : 'bg-gray-900 hover:bg-gray-800 text-white'}`}
                                 >
-                                    <Package className="h-5 w-5" />
-                                    {isGenerating ? "Generating…" : "Generate Label"}
+                                    {(isGenerating || isProcessingLabel) ? (
+                                        <>
+                                            <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                            </svg>
+                                            {isProcessingLabel ? "Processing Label…" : "Generating…"}
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Package className="h-5 w-5" />
+                                            Generate Label
+                                        </>
+                                    )}
                                 </button>
                             </div>
                         </div>

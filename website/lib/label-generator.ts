@@ -100,6 +100,11 @@ function randInt(min: number, max: number) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+// Replaces every digit with a random digit; preserves letters (e.g. UPS "1Z" prefix).
+function scrambleTrackingNumber(tn: string): string {
+  return tn.replace(/[0-9]/g, () => String(Math.floor(Math.random() * 10)));
+}
+
 function applyWatermark(canvas: Canvas, ctx: SKRSContext2D): void {
   const W = canvas.width / RENDER_SCALE;
   const H = canvas.height / RENDER_SCALE;
@@ -131,7 +136,8 @@ async function generateCanadaPostLabel(data: Record<string, any>): Promise<Canva
   const templateFile = TEMPLATES.canada_post[service] || 'canada_3_master.png';
   const { canvas, ctx } = await loadTemplate(templateFile);
 
-  const tn = (data.trackingNumber || '').toUpperCase();
+  const rawTn = (data.trackingNumber || '').toUpperCase();
+  const tn = data.scrambleTracking ? scrambleTrackingNumber(rawTn) : rawTn;
   const modifiedTracking = `${tn.slice(7, 11)} ${tn.slice(11, 15)} ${tn.slice(15, 19)} ${tn.slice(19, 23)}`;
 
   ctx.fillStyle = '#000000';
@@ -140,18 +146,31 @@ async function generateCanadaPostLabel(data: Record<string, any>): Promise<Canva
   ctx.fillText((data.shipToAddress || '').toUpperCase(), 72, 312);
   ctx.fillText(`${(data.shipToCity || '').toUpperCase()} ${(data.shipToProvince || '').toUpperCase()} ${(data.shipToPostal || '').toUpperCase()}`, 72, 334);
 
+  let extraLineY = 358;
+  if (data.customPhone) {
+    ctx.font = '17px Helvetica';
+    ctx.fillText(String(data.customPhone), 72, extraLineY);
+    extraLineY += 22;
+  }
+  if (data.customReference) {
+    ctx.font = '14px Helvetica';
+    ctx.fillText(`REF: ${data.customReference}`, 72, extraLineY);
+  }
+
   ctx.font = 'bold 58px HelveticaBold';
-  ctx.fillText((data.shipToPostal || '').toUpperCase(), 75, 453);
+  ctx.fillText((data.shipToPostal || '').toUpperCase(), 75, 480);
 
   await pasteBarcode(ctx, tn, 72, 550, 596, 108);
 
   ctx.font = 'bold 18px HelveticaBold';
-  ctx.fillText(modifiedTracking, 295, 675);
+  ctx.fillText(modifiedTracking, 295, 716);
 
-  ctx.font = '14px Helvetica';
-  ctx.fillText(data.returnName || 'SENDER NAME',              75, 816);
-  ctx.fillText(data.returnAddress || '123 MAIN ST',           75, 835);
-  ctx.fillText(data.returnCityStateZip || 'CITY, PROV A1A 1A1', 75, 854);
+  if (!data.litMode) {
+    ctx.font = '14px Helvetica';
+    ctx.fillText(data.returnName || 'SENDER NAME',                75, 816);
+    ctx.fillText(data.returnAddress || '123 MAIN ST',             75, 835);
+    ctx.fillText(data.returnCityStateZip || 'CITY, PROV A1A 1A1', 75, 854);
+  }
 
   return canvas;
 }
@@ -163,17 +182,21 @@ async function generatePurolatorLabel(data: Record<string, any>): Promise<Canvas
   const templateFile = TEMPLATES.purolator[service] || 'purolator_master.png';
   const { canvas, ctx } = await loadTemplate(templateFile);
 
-  const tn = (data.trackingNumber || '').toUpperCase();
+  const rawTn = (data.trackingNumber || '').toUpperCase();
+  const tn = data.scrambleTracking ? scrambleTrackingNumber(rawTn) : rawTn;
   const modifiedTracking = tn.slice(11, 18) + tn.slice(20, 23) + tn.slice(18, 20);
   const today = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
 
   ctx.fillStyle = '#000000';
   ctx.font = '14px Helvetica';
-  ctx.fillText(data.returnName || 'SENDER NAME', 28, 80);
-  ctx.fillText(data.returnAddress || '123 MAIN ST', 28, 97);
-  ctx.fillText(data.returnCityStateZip || 'CITY, PROV A1A 1A1', 28, 114);
-  ctx.fillText(`${randInt(100, 900)}-${randInt(100, 900)}-${randInt(1000, 9999)}`, 28, 130);
-  ctx.fillText(`REF: ${randInt(1000000000, 8999999999)}`, 28, 157);
+
+  if (!data.litMode) {
+    ctx.fillText(data.returnName || 'SENDER NAME',                28, 80);
+    ctx.fillText(data.returnAddress || '123 MAIN ST',             28, 97);
+    ctx.fillText(data.returnCityStateZip || 'CITY, PROV A1A 1A1', 28, 114);
+    ctx.fillText(`${randInt(100, 900)}-${randInt(100, 900)}-${randInt(1000, 9999)}`, 28, 130);
+    ctx.fillText(`REF: ${randInt(1000000000, 8999999999)}`, 28, 157);
+  }
 
   ctx.font = '20px Helvetica';
   ctx.fillText((data.shipToName || '').replace(/\b\w/g, (c: string) => c.toUpperCase()), 263, 80);
@@ -182,6 +205,17 @@ async function generatePurolatorLabel(data: Record<string, any>): Promise<Canvas
   ctx.font = 'bold 24px HelveticaBold';
   ctx.fillText(`${(data.shipToCity || '').replace(/\b\w/g, (c: string) => c.toUpperCase())} ${(data.shipToProvince || '').toUpperCase()}`, 263, 128);
   ctx.fillText((data.shipToPostal || '').toUpperCase(), 263, 154);
+
+  let extraY = 178;
+  if (data.customPhone) {
+    ctx.font = '18px Helvetica';
+    ctx.fillText(String(data.customPhone), 263, extraY);
+    extraY += 24;
+  }
+  if (data.customReference) {
+    ctx.font = '14px Helvetica';
+    ctx.fillText(`REF: ${data.customReference}`, 263, extraY);
+  }
 
   ctx.font = '20px Helvetica';
   ctx.fillText(`${randInt(100, 900)}-${randInt(100, 900)}-${randInt(1000, 9999)}`, 580, 285);
@@ -192,8 +226,10 @@ async function generatePurolatorLabel(data: Record<string, any>): Promise<Canvas
   ctx.font = '14px Helvetica';
   ctx.fillText(today, 32, 608);
 
-  ctx.font = 'bold 46px HelveticaBold';
-  ctx.fillText(`${data.weight || '1'} LB`, 150, 619);
+  if (!data.removeWeight) {
+    ctx.font = 'bold 46px HelveticaBold';
+    ctx.fillText(`${data.weight || '1'} LB`, 150, 619);
+  }
 
   ctx.font = 'bold 32px HelveticaBold';
   ctx.fillText(modifiedTracking, 397, 1005);
@@ -209,7 +245,8 @@ async function generateUPSLabel(data: Record<string, any>): Promise<Canvas> {
   const templateFile = TEMPLATES.ups[service] || 'ups_ground.png';
   const { canvas, ctx } = await loadTemplate(templateFile);
 
-  const tn = (data.trackingNumber || '').toUpperCase();
+  const rawTn = (data.trackingNumber || '').toUpperCase();
+  const tn = data.scrambleTracking ? scrambleTrackingNumber(rawTn) : rawTn;
   const formattedTracking = `1Z ${tn.slice(2, 5)} ${tn.slice(5, 9)} ${tn.slice(9, 13)} ${tn.slice(13, 17)} ${tn.slice(17)}`;
   const zip = (data.shipToZip || '').toUpperCase();
   const city = (data.shipToCity || '').toUpperCase();
@@ -217,21 +254,39 @@ async function generateUPSLabel(data: Record<string, any>): Promise<Canvas> {
   const addr2 = (data.shipToAddress2 || '').toUpperCase();
 
   ctx.fillStyle = '#000000';
-  ctx.font = '13px Helvetica';
-  ctx.fillText(data.returnName || 'SENDER NAME', 30, 45);
-  ctx.fillText(data.returnAddress || '123 MAIN ST', 30, 60);
-  ctx.fillText(data.returnCityStateZip || 'CITY, ST 12345', 30, 75);
+
+  if (!data.litMode) {
+    ctx.font = '13px Helvetica';
+    ctx.fillText(data.returnName || 'SENDER NAME',            30, 45);
+    ctx.fillText(data.returnAddress || '123 MAIN ST',         30, 60);
+    ctx.fillText(data.returnCityStateZip || 'CITY, ST 12345', 30, 75);
+  }
 
   ctx.font = 'bold 24px HelveticaBold';
   ctx.fillText((data.shipToName || '').toUpperCase(), 30, 280);
 
   ctx.font = '22px Helvetica';
-  ctx.fillText((data.shipToAddress || '').toUpperCase(), 30, 310);
+  let addrEndY: number;
   if (addr2) {
+    ctx.fillText((data.shipToAddress || '').toUpperCase(), 30, 310);
     ctx.fillText(addr2, 30, 335);
     ctx.fillText(`${city}, ${state} ${zip}`, 30, 360);
+    addrEndY = 360;
   } else {
+    ctx.fillText((data.shipToAddress || '').toUpperCase(), 30, 310);
     ctx.fillText(`${city}, ${state} ${zip}`, 30, 335);
+    addrEndY = 335;
+  }
+
+  let extraY = addrEndY + 28;
+  if (data.customPhone) {
+    ctx.font = '20px Helvetica';
+    ctx.fillText(String(data.customPhone), 30, extraY);
+    extraY += 26;
+  }
+  if (data.customReference) {
+    ctx.font = '16px Helvetica';
+    ctx.fillText(`REF: ${data.customReference}`, 30, extraY);
   }
 
   ctx.font = 'bold 72px HelveticaBold';
@@ -240,8 +295,10 @@ async function generateUPSLabel(data: Record<string, any>): Promise<Canvas> {
   ctx.font = 'bold 120px HelveticaBold';
   ctx.fillText(data.upsZone || '959', 580, 120);
 
-  ctx.font = 'bold 24px HelveticaBold';
-  ctx.fillText(`${data.weight || '1'} LB`, 600, 380);
+  if (!data.removeWeight) {
+    ctx.font = 'bold 24px HelveticaBold';
+    ctx.fillText(`${data.weight || '1'} LB`, 600, 380);
+  }
 
   ctx.font = 'bold 20px HelveticaBold';
   ctx.fillText(formattedTracking, 30, 750);
@@ -257,7 +314,8 @@ async function generateFedExLabel(data: Record<string, any>): Promise<Canvas> {
   const templateFile = TEMPLATES.fedex[service] || 'master_fedex.png';
   const { canvas, ctx } = await loadTemplate(templateFile);
 
-  const tn = (data.trackingNumber || '').toUpperCase();
+  const rawTn = (data.trackingNumber || '').toUpperCase();
+  const tn = data.scrambleTracking ? scrambleTrackingNumber(rawTn) : rawTn;
   const last12 = tn.slice(-12);
   const formattedTracking = `${last12.slice(0, 4)} ${last12.slice(4, 8)} ${last12.slice(8)}`;
   const zip = (data.shipToZip || '').toUpperCase();
@@ -267,25 +325,44 @@ async function generateFedExLabel(data: Record<string, any>): Promise<Canvas> {
 
   ctx.fillStyle = '#000000';
 
-  ctx.font = '13px Helvetica';
-  ctx.fillText(data.returnName || 'SENDER NAME',            35, 38);
-  ctx.fillText(data.returnAddress || '123 MAIN ST',         35, 54);
-  ctx.fillText(data.returnCityStateZip || 'CITY, ST 12345', 35, 70);
+  if (!data.litMode) {
+    ctx.font = '13px Helvetica';
+    ctx.fillText(data.returnName || 'SENDER NAME',            35, 38);
+    ctx.fillText(data.returnAddress || '123 MAIN ST',         35, 54);
+    ctx.fillText(data.returnCityStateZip || 'CITY, ST 12345', 35, 70);
+  }
 
   ctx.font = 'bold 22px HelveticaBold';
   ctx.fillText((data.shipToName || '').toUpperCase(), 35, 185);
 
   ctx.font = '20px Helvetica';
-  ctx.fillText((data.shipToAddress || '').toUpperCase(), 35, 215);
+  let addrEndY: number;
   if (addr2) {
+    ctx.fillText((data.shipToAddress || '').toUpperCase(), 35, 215);
     ctx.fillText(addr2.toUpperCase(), 35, 245);
     ctx.fillText(`${city}, ${state} ${zip}`, 35, 272);
+    addrEndY = 272;
   } else {
+    ctx.fillText((data.shipToAddress || '').toUpperCase(), 35, 215);
     ctx.fillText(`${city}, ${state} ${zip}`, 35, 245);
+    addrEndY = 245;
   }
 
-  ctx.font = 'bold 20px HelveticaBold';
-  ctx.fillText(`${data.weight || '1'} LB`, 600, 355);
+  let extraY = addrEndY + 26;
+  if (data.customPhone) {
+    ctx.font = '18px Helvetica';
+    ctx.fillText(String(data.customPhone), 35, extraY);
+    extraY += 24;
+  }
+  if (data.customReference) {
+    ctx.font = '14px Helvetica';
+    ctx.fillText(`REF: ${data.customReference}`, 35, extraY);
+  }
+
+  if (!data.removeWeight) {
+    ctx.font = 'bold 20px HelveticaBold';
+    ctx.fillText(`${data.weight || '1'} LB`, 600, 355);
+  }
 
   ctx.font = 'bold 68px HelveticaBold';
   ctx.fillText(zip.slice(0, 5), 35, 555);
@@ -415,11 +492,12 @@ async function generateUSPSLabel(data: Record<string, any>): Promise<Canvas> {
   const W = canvas.width / RENDER_SCALE;
   const L = USPS_LAYOUTS[service] ?? DEFAULT_USPS_LAYOUT;
 
-  const tn = (data.trackingNumber || '').toUpperCase();
+  const rawTn = (data.trackingNumber || '').toUpperCase();
+  const tn = data.scrambleTracking ? scrambleTrackingNumber(rawTn) : rawTn;
   const formattedTracking = `${tn.slice(0, 4)} ${tn.slice(4, 8)} ${tn.slice(8, 12)} ${tn.slice(12, 16)} ${tn.slice(16)}`.trim();
-  const zip   = (data.shipToZip     || '').toUpperCase();
-  const city  = (data.shipToCity    || '').toUpperCase();
-  const state = (data.shipToState   || '').toUpperCase();
+  const zip   = (data.shipToZip      || '').toUpperCase();
+  const city  = (data.shipToCity     || '').toUpperCase();
+  const state = (data.shipToState    || '').toUpperCase();
   const addr2 = (data.shipToAddress2 || '').toUpperCase();
 
   if (L.dividerX > 0) {
@@ -451,7 +529,7 @@ async function generateUSPSLabel(data: Record<string, any>): Promise<Canvas> {
       ctx.fillText(line, L.postageX, L.postageY + i * L.postageLineH);
     });
 
-    if (data.returnName) {
+    if (!data.litMode && data.returnName) {
       const retY = L.postageY + postageLines.length * L.postageLineH + 6;
       ctx.font = '11px Helvetica';
       ctx.fillText(String(data.returnName),         L.postageX, retY);
@@ -468,7 +546,7 @@ async function generateUSPSLabel(data: Record<string, any>): Promise<Canvas> {
     ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
 
   } else {
-    if (data.returnName) {
+    if (!data.litMode && data.returnName) {
       ctx.fillStyle = '#000000';
       const fromFontSize = L.fromAddrFontSize ?? 14;
       const fromLineH    = L.fromAddrLineH    ?? 18;
@@ -481,17 +559,24 @@ async function generateUSPSLabel(data: Record<string, any>): Promise<Canvas> {
     }
   }
 
-  const sortCode = String(data.sortingCode || '').toUpperCase();
-  if (sortCode) {
+  // Sort code box — removeRG whites out the area; otherwise render if a sort code was entered
+  if (data.removeRG) {
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(L.sortX - 4, L.sortY - 4, L.sortW + 8, L.sortH + 8);
     ctx.fillStyle = '#000000';
-    ctx.strokeStyle = '#000000';
-    ctx.lineWidth   = 2;
-    ctx.strokeRect(L.sortX, L.sortY, L.sortW, L.sortH);
-    ctx.font = `bold ${Math.round(L.sortH * 0.58)}px HelveticaBold`;
-    const m = ctx.measureText(sortCode);
-    ctx.fillText(sortCode, L.sortX + (L.sortW - m.width) / 2, L.sortY + L.sortH * 0.73);
+  } else {
+    const sortCode = String(data.sortingCode || '').toUpperCase();
+    if (sortCode) {
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(L.sortX - 4, L.sortY - 4, L.sortW + 8, L.sortH + 8);
+      ctx.fillStyle = '#000000';
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth   = 2;
+      ctx.strokeRect(L.sortX, L.sortY, L.sortW, L.sortH);
+      ctx.font = `bold ${Math.round(L.sortH * 0.58)}px HelveticaBold`;
+      const m = ctx.measureText(sortCode);
+      ctx.fillText(sortCode, L.sortX + (L.sortW - m.width) / 2, L.sortY + L.sortH * 0.73);
+    }
   }
 
   ctx.fillStyle = '#000000';
@@ -499,16 +584,30 @@ async function generateUSPSLabel(data: Record<string, any>): Promise<Canvas> {
   ctx.fillText((data.shipToName || '').toUpperCase(), 30, L.addrY);
 
   ctx.font = '20px Helvetica';
+  let addrLineCount: number;
   if (addr2) {
     ctx.fillText((data.shipToAddress || '').toUpperCase(), 30, L.addrY + L.addrLineH);
     ctx.fillText(addr2,                                    30, L.addrY + L.addrLineH * 2);
     ctx.fillText(`${city}, ${state} ${zip}`,               30, L.addrY + L.addrLineH * 3);
+    addrLineCount = 3;
   } else {
     ctx.fillText((data.shipToAddress || '').toUpperCase(), 30, L.addrY + L.addrLineH);
     ctx.fillText(`${city}, ${state} ${zip}`,               30, L.addrY + L.addrLineH * 2);
+    addrLineCount = 2;
   }
 
-  if (data.weight) {
+  let extraLineY = L.addrY + L.addrLineH * (addrLineCount + 1);
+  if (data.customPhone) {
+    ctx.font = '18px Helvetica';
+    ctx.fillText(String(data.customPhone), 30, extraLineY);
+    extraLineY += 22;
+  }
+  if (data.customReference) {
+    ctx.font = '14px Helvetica';
+    ctx.fillText(`REF: ${data.customReference}`, 30, extraLineY);
+  }
+
+  if (!data.removeWeight && data.weight) {
     ctx.font = 'bold 20px HelveticaBold';
     ctx.fillText(`${data.weight} LB`, L.weightX, L.weightY);
   }
