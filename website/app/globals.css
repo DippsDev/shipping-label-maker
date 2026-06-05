@@ -23,4 +23,18 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  overflow-x: hidden;
+  /* Home indicator bar on iPhone */
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Safe area utilities — used on sticky/fixed elements at screen edges */
+/* Replaces pt-4 (1rem) on headers/sidebar brand sections; extends to cover notch/Dynamic Island */
+.safe-top {
+  padding-top: max(1rem, env(safe-area-inset-top, 0px));
+}
+
+/* Adds safe area padding on top of existing layout (for outer wrappers with no pt) */
+.safe-top-add {
+  padding-top: env(safe-area-inset-top, 0px);
 }

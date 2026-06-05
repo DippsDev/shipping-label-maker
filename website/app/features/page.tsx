@@ -53,7 +53,7 @@ export default function Features() {
 
     return (
         <div className="min-h-screen bg-gray-50">
-            <nav className="border-b border-gray-200 bg-white sticky top-0 z-50 backdrop-blur-sm bg-white/90">
+            <nav className="border-b border-gray-200 bg-white sticky top-0 z-50 backdrop-blur-sm bg-white/90 safe-top-add">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between items-center h-16">
                         <Link href="/" className="flex items-center gap-2">
@@ -72,14 +72,14 @@ export default function Features() {
                 </div>
             </nav>
 
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-20">
                 {/* Pricing Section */}
-                <div className="mb-24">
-                    <div className="text-center mb-16 animate-fade-in">
-                        <h2 className="text-4xl font-bold text-gray-900 mb-4 animate-slide-down">
+                <div className="mb-12 md:mb-24">
+                    <div className="text-center mb-8 md:mb-16 animate-fade-in">
+                        <h2 className="text-2xl md:text-4xl font-bold text-gray-900 mb-4 animate-slide-down">
                             Simple, Transparent Pricing
                         </h2>
-                        <p className="text-xl text-gray-600 max-w-2xl mx-auto animate-slide-up">
+                        <p className="text-base md:text-xl text-gray-600 max-w-2xl mx-auto animate-slide-up">
                             Choose the plan that works best for your business
                         </p>
                     </div>

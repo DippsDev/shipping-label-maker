@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Package, LayoutDashboard, Tag, History, Wallet, MapPin, Search, Settings, Plus, Edit, Trash2, Star, Clock, Menu, X } from "lucide-react";
+import { Package, LayoutDashboard, Tag, History, Wallet, MapPin, Search, Settings, Plus, Edit, Trash2, Star, Clock, Menu, X, LogOut } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase-client";
 import { useRouter } from "next/navigation";
@@ -246,7 +246,7 @@ export default function AddressesPage() {
 
             {/* Sidebar */}
             <aside className={`fixed xl:sticky xl:top-0 xl:h-screen inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 flex flex-col transform transition-transform duration-300 ease-in-out ${showMobileMenu ? 'translate-x-0' : '-translate-x-full'} xl:translate-x-0`}>
-                <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+                <div className="px-4 pb-4 safe-top border-b border-gray-200 flex items-center justify-between">
                     <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
                         <Package className="h-6 w-6 text-gray-700" />
                         <span className="text-lg font-semibold text-gray-900">Label Maker</span>
@@ -305,7 +305,7 @@ export default function AddressesPage() {
             {/* Main Content */}
             <main className="flex-1 w-full xl:w-auto">
                 {/* Header */}
-                <header className="bg-white border-b border-gray-200 px-4 md:px-8 py-4 flex items-center justify-between">
+                <header className="bg-white border-b border-gray-200 px-4 md:px-8 pb-4 safe-top flex items-center justify-between">
                     <div className="flex items-center gap-3 flex-1">
                         <button
                             onClick={() => setShowMobileMenu(true)}
@@ -314,8 +314,8 @@ export default function AddressesPage() {
                             <Menu className="h-5 w-5 text-gray-600" />
                         </button>
                         <div className="flex-1 text-center xl:text-left pr-16 xl:pr-0">
-                            <h1 className="text-xl md:text-2xl font-semibold text-gray-900">Addresses</h1>
-                            <p className="text-xs md:text-sm text-gray-600 mt-1">Manage your saved and recent shipping addresses</p>
+                            <h1 className="text-lg md:text-2xl font-semibold text-gray-900">Addresses</h1>
+                            <p className="hidden sm:block text-xs md:text-sm text-gray-600 mt-1">Manage your saved and recent shipping addresses</p>
                         </div>
                     </div>
                     <div className="relative" ref={menuRef}>
@@ -330,28 +330,29 @@ export default function AddressesPage() {
                         </button>
 
                         {showAccountMenu && (
-                            <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
-                                <div className="px-4 py-3 border-b border-gray-200">
-                                    <p className="text-xs text-gray-500 uppercase font-medium mb-2">Account</p>
+                            <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden z-50">
+                                <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
+                                    <p className="text-xs text-gray-400 uppercase tracking-wide font-medium mb-2">Signed in as</p>
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                                        <div className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
                                             <span className="text-sm font-medium text-gray-900">{userInitials}</span>
                                         </div>
-                                        <div>
-                                            <p className="text-sm font-medium text-gray-900">{session?.user?.user_metadata?.name || "Test User"}</p>
-                                            <p className="text-xs text-gray-500">{session?.user?.email || "test@example.com"}</p>
+                                        <div className="min-w-0">
+                                            <p className="text-sm font-medium text-gray-900 truncate">{session?.user?.user_metadata?.name || "Test User"}</p>
+                                            <p className="text-xs text-gray-500 truncate">{session?.user?.email || "test@example.com"}</p>
                                         </div>
                                     </div>
                                 </div>
-                                <div className="border-t border-gray-200 pt-2">
-                                    <Link href="/settings" className="w-full px-4 py-2 text-left hover:bg-gray-50 text-sm text-gray-700 flex items-center gap-2">
-                                        <Settings className="h-4 w-4" />
+                                <div className="py-1">
+                                    <Link href="/settings" className="w-full px-4 py-2.5 text-left hover:bg-gray-50 text-sm text-gray-700 flex items-center gap-2.5 transition-colors">
+                                        <Settings className="h-4 w-4 text-gray-500" />
                                         Settings
                                     </Link>
                                     <button
                                         onClick={handleSignOut}
-                                        className="w-full px-4 py-2 text-left hover:bg-gray-50 text-sm text-red-600"
+                                        className="w-full px-4 py-2.5 text-left hover:bg-red-50 text-sm text-red-600 flex items-center gap-2.5 transition-colors"
                                     >
+                                        <LogOut className="h-4 w-4" />
                                         Sign Out
                                     </button>
                                 </div>
@@ -361,43 +362,43 @@ export default function AddressesPage() {
                 </header>
 
                 {/* Content */}
-                <div className="p-8">
+                <div className="p-4 md:p-8">
                     {/* Stats Cards */}
-                    <div className="grid md:grid-cols-3 gap-6 mb-6">
-                        <div className="bg-white rounded-lg border border-gray-200 p-6">
-                            <div className="flex items-center justify-between mb-2">
-                                <p className="text-sm text-gray-600">Total Addresses</p>
-                                <MapPin className="h-5 w-5 text-gray-400" />
+                    <div className="grid grid-cols-3 gap-3 md:gap-6 mb-6">
+                        <div className="bg-white rounded-lg border border-gray-200 p-3 md:p-6">
+                            <div className="flex items-center justify-between mb-1 md:mb-2">
+                                <p className="text-xs md:text-sm text-gray-600">Total</p>
+                                <MapPin className="h-4 w-4 md:h-5 md:w-5 text-gray-400" />
                             </div>
-                            <p className="text-3xl font-semibold text-gray-900 mb-1">{addresses.length}</p>
-                            <p className="text-xs text-gray-500">All stored addresses</p>
+                            <p className="text-2xl md:text-3xl font-semibold text-gray-900 mb-1">{addresses.length}</p>
+                            <p className="text-xs text-gray-500 hidden sm:block">All stored addresses</p>
                         </div>
 
-                        <div className="bg-white rounded-lg border border-gray-200 p-6">
-                            <div className="flex items-center justify-between mb-2">
-                                <p className="text-sm text-gray-600">Saved Addresses</p>
-                                <Star className="h-5 w-5 text-gray-400" />
+                        <div className="bg-white rounded-lg border border-gray-200 p-3 md:p-6">
+                            <div className="flex items-center justify-between mb-1 md:mb-2">
+                                <p className="text-xs md:text-sm text-gray-600">Saved</p>
+                                <Star className="h-4 w-4 md:h-5 md:w-5 text-gray-400" />
                             </div>
-                            <p className="text-3xl font-semibold text-gray-900 mb-1">{addresses.filter(a => a.isSaved).length}</p>
-                            <p className="text-xs text-gray-500">In address book</p>
+                            <p className="text-2xl md:text-3xl font-semibold text-gray-900 mb-1">{addresses.filter(a => a.isSaved).length}</p>
+                            <p className="text-xs text-gray-500 hidden sm:block">In address book</p>
                         </div>
 
-                        <div className="bg-white rounded-lg border border-gray-200 p-6">
-                            <div className="flex items-center justify-between mb-2">
-                                <p className="text-sm text-gray-600">Recent Addresses</p>
-                                <Clock className="h-5 w-5 text-gray-400" />
+                        <div className="bg-white rounded-lg border border-gray-200 p-3 md:p-6">
+                            <div className="flex items-center justify-between mb-1 md:mb-2">
+                                <p className="text-xs md:text-sm text-gray-600">Recent</p>
+                                <Clock className="h-4 w-4 md:h-5 md:w-5 text-gray-400" />
                             </div>
-                            <p className="text-3xl font-semibold text-gray-900 mb-1">{addresses.filter(a => !a.isSaved).length}</p>
-                            <p className="text-xs text-gray-500">From recent labels</p>
+                            <p className="text-2xl md:text-3xl font-semibold text-gray-900 mb-1">{addresses.filter(a => !a.isSaved).length}</p>
+                            <p className="text-xs text-gray-500 hidden sm:block">From recent labels</p>
                         </div>
                     </div>
 
                     {/* Add Address Button */}
-                    <div className="bg-gray-900 rounded-lg p-6 mb-6">
-                        <div className="flex items-center justify-between">
+                    <div className="bg-gray-900 rounded-lg p-4 md:p-6 mb-6">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                             <div>
-                                <h2 className="text-lg font-semibold text-white mb-1">Add New Address</h2>
-                                <p className="text-sm text-gray-300">Save frequently used addresses to your address book</p>
+                                <h2 className="text-base md:text-lg font-semibold text-white mb-1">Add New Address</h2>
+                                <p className="text-xs md:text-sm text-gray-300">Save frequently used addresses to your address book</p>
                             </div>
                             <button
                                 onClick={() => setShowAddModal(true)}
@@ -417,7 +418,7 @@ export default function AddressesPage() {
                             </div>
 
                             {/* Search and Filter */}
-                            <div className="flex gap-4">
+                            <div className="flex flex-col sm:flex-row gap-3">
                                 <div className="flex-1 relative">
                                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                                     <input

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Package, LayoutDashboard, Tag, History, Wallet, MapPin, Search, Settings, Download, Eye, Printer, Calendar, Menu, X } from "lucide-react";
+import { Package, LayoutDashboard, Tag, History, Wallet, MapPin, Search, Settings, Download, Eye, Printer, Calendar, Menu, X, LogOut } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useSession, signOut } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
@@ -246,7 +246,7 @@ export default function HistoryPage() {
 
                 {/* Sidebar */}
                 <aside className={`fixed xl:sticky xl:top-0 xl:h-screen inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 flex flex-col transform transition-transform duration-300 ease-in-out ${showMobileMenu ? 'translate-x-0' : '-translate-x-full'} xl:translate-x-0`}>
-                    <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+                    <div className="px-4 pb-4 safe-top border-b border-gray-200 flex items-center justify-between">
                         <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
                             <Package className="h-6 w-6 text-gray-700" />
                             <span className="text-lg font-semibold text-gray-900">Label Maker</span>
@@ -305,7 +305,7 @@ export default function HistoryPage() {
                 {/* Main Content */}
                 <main className="flex-1 w-full xl:w-auto">
                     {/* Header */}
-                    <header className="bg-white border-b border-gray-200 px-4 md:px-8 py-4 flex items-center justify-between">
+                    <header className="bg-white border-b border-gray-200 px-4 md:px-8 pb-4 safe-top flex items-center justify-between">
                         <div className="flex items-center gap-3 flex-1">
                             <button
                                 onClick={() => setShowMobileMenu(true)}
@@ -314,8 +314,8 @@ export default function HistoryPage() {
                                 <Menu className="h-5 w-5 text-gray-600" />
                             </button>
                             <div className="flex-1 text-center xl:text-left pr-16 xl:pr-0">
-                                <h1 className="text-xl md:text-2xl font-semibold text-gray-900">Label History</h1>
-                                <p className="text-xs md:text-sm text-gray-600 mt-1">View and manage all your created labels</p>
+                                <h1 className="text-lg md:text-2xl font-semibold text-gray-900">Label History</h1>
+                                <p className="hidden sm:block text-xs md:text-sm text-gray-600 mt-1">View and manage all your created labels</p>
                             </div>
                         </div>
                         <div className="relative" ref={menuRef}>
@@ -332,30 +332,31 @@ export default function HistoryPage() {
                             </button>
 
                             {showAccountMenu && (
-                                <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
-                                    <div className="px-4 py-2 border-b border-gray-200">
-                                        <p className="text-xs text-gray-500 uppercase font-medium mb-2">Account</p>
+                                <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden z-50">
+                                    <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
+                                        <p className="text-xs text-gray-400 uppercase tracking-wide font-medium mb-2">Signed in as</p>
                                         <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                                            <div className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
                                                 <span className="text-sm font-medium text-gray-900">{userInitials}</span>
                                             </div>
-                                            <div>
-                                                <p className="text-sm font-medium text-gray-900">
+                                            <div className="min-w-0">
+                                                <p className="text-sm font-medium text-gray-900 truncate">
                                                     {session?.user?.user_metadata?.name || "Test User"}
                                                 </p>
-                                                <p className="text-xs text-gray-500">{session?.user?.email || "test@example.com"}</p>
+                                                <p className="text-xs text-gray-500 truncate">{session?.user?.email || "test@example.com"}</p>
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="border-t border-gray-200 pt-2">
-                                        <Link href="/settings" className="w-full px-4 py-2 text-left hover:bg-gray-50 text-sm text-gray-700 flex items-center gap-2">
-                                            <Settings className="h-4 w-4" />
+                                    <div className="py-1">
+                                        <Link href="/settings" className="w-full px-4 py-2.5 text-left hover:bg-gray-50 text-sm text-gray-700 flex items-center gap-2.5 transition-colors">
+                                            <Settings className="h-4 w-4 text-gray-500" />
                                             Settings
                                         </Link>
                                         <button
                                             onClick={handleSignOut}
-                                            className="w-full px-4 py-2 text-left hover:bg-gray-50 text-sm text-red-600"
+                                            className="w-full px-4 py-2.5 text-left hover:bg-red-50 text-sm text-red-600 flex items-center gap-2.5 transition-colors"
                                         >
+                                            <LogOut className="h-4 w-4" />
                                             Sign Out
                                         </button>
                                     </div>
@@ -365,34 +366,34 @@ export default function HistoryPage() {
                     </header>
 
                     {/* Content */}
-                    <div className="p-8">
+                    <div className="p-4 md:p-8">
                         {/* Stats Cards */}
-                        <div className="grid md:grid-cols-3 gap-6 mb-6">
-                            <div className="bg-white rounded-lg border border-gray-200 p-6">
-                                <div className="flex items-center justify-between mb-2">
-                                    <p className="text-sm text-gray-600">Total Labels</p>
-                                    <Tag className="h-5 w-5 text-gray-400" />
+                        <div className="grid grid-cols-3 gap-3 md:gap-6 mb-6">
+                            <div className="bg-white rounded-lg border border-gray-200 p-3 md:p-6">
+                                <div className="flex items-center justify-between mb-1 md:mb-2">
+                                    <p className="text-xs md:text-sm text-gray-600">Total Labels</p>
+                                    <Tag className="h-4 w-4 md:h-5 md:w-5 text-gray-400" />
                                 </div>
-                                <p className="text-3xl font-semibold text-gray-900 mb-1">{totalLabels}</p>
-                                <p className="text-xs text-gray-500">All time</p>
+                                <p className="text-2xl md:text-3xl font-semibold text-gray-900 mb-1">{totalLabels}</p>
+                                <p className="text-xs text-gray-500 hidden sm:block">All time</p>
                             </div>
 
-                            <div className="bg-white rounded-lg border border-gray-200 p-6">
-                                <div className="flex items-center justify-between mb-2">
-                                    <p className="text-sm text-gray-600">This Month</p>
-                                    <Calendar className="h-5 w-5 text-gray-400" />
+                            <div className="bg-white rounded-lg border border-gray-200 p-3 md:p-6">
+                                <div className="flex items-center justify-between mb-1 md:mb-2">
+                                    <p className="text-xs md:text-sm text-gray-600">This Month</p>
+                                    <Calendar className="h-4 w-4 md:h-5 md:w-5 text-gray-400" />
                                 </div>
-                                <p className="text-3xl font-semibold text-gray-900 mb-1">{thisMonthLabels}</p>
-                                <p className="text-xs text-gray-500">Labels created</p>
+                                <p className="text-2xl md:text-3xl font-semibold text-gray-900 mb-1">{thisMonthLabels}</p>
+                                <p className="text-xs text-gray-500 hidden sm:block">Labels created</p>
                             </div>
 
-                            <div className="bg-white rounded-lg border border-gray-200 p-6">
-                                <div className="flex items-center justify-between mb-2">
-                                    <p className="text-sm text-gray-600">Total Spent</p>
-                                    <Wallet className="h-5 w-5 text-gray-400" />
+                            <div className="bg-white rounded-lg border border-gray-200 p-3 md:p-6">
+                                <div className="flex items-center justify-between mb-1 md:mb-2">
+                                    <p className="text-xs md:text-sm text-gray-600">Total Spent</p>
+                                    <Wallet className="h-4 w-4 md:h-5 md:w-5 text-gray-400" />
                                 </div>
-                                <p className="text-3xl font-semibold text-gray-900 mb-1">${totalSpent.toFixed(2)}</p>
-                                <p className="text-xs text-gray-500">On all labels</p>
+                                <p className="text-2xl md:text-3xl font-semibold text-gray-900 mb-1">${totalSpent.toFixed(2)}</p>
+                                <p className="text-xs text-gray-500 hidden sm:block">On all labels</p>
                             </div>
                         </div>
 
@@ -400,10 +401,10 @@ export default function HistoryPage() {
                         <div className="bg-white rounded-lg border border-gray-200">
                             <div className="p-6 border-b border-gray-200">
                                 <div className="flex items-center justify-between mb-4">
-                                    <h2 className="text-lg font-semibold text-gray-900">All Labels</h2>
-                                    <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm">
+                                    <h2 className="text-base md:text-lg font-semibold text-gray-900">All Labels</h2>
+                                    <button className="flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm">
                                         <Download className="h-4 w-4" />
-                                        Export
+                                        <span className="hidden sm:inline">Export</span>
                                     </button>
                                 </div>
 
@@ -423,7 +424,7 @@ export default function HistoryPage() {
                                         <select
                                             value={selectedCarrier}
                                             onChange={(e) => setSelectedCarrier(e.target.value)}
-                                            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900"
+                                            className="flex-1 sm:flex-initial px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900 text-sm"
                                         >
                                             <option value="all">All Carriers</option>
                                             <option value="UPS">UPS</option>
@@ -435,7 +436,7 @@ export default function HistoryPage() {
                                         <select
                                             value={dateFilter}
                                             onChange={(e) => setDateFilter(e.target.value)}
-                                            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900"
+                                            className="flex-1 sm:flex-initial px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-gray-900 text-sm"
                                         >
                                             <option value="all">All Time</option>
                                             <option value="today">Today</option>
@@ -446,8 +447,43 @@ export default function HistoryPage() {
                                 </div>
                             </div>
 
-                            {/* Labels Table */}
-                            <div className="overflow-x-auto">
+                            {/* Mobile cards */}
+                            <div className="md:hidden divide-y divide-gray-200">
+                                {filteredLabels.map((label) => (
+                                    <div key={label.id} className="p-4 space-y-2">
+                                        <div className="flex items-start justify-between gap-2">
+                                            <div className="min-w-0">
+                                                <p className="text-sm font-medium text-gray-900 truncate">{label.trackingNumber}</p>
+                                                <p className="text-xs text-gray-500">{label.service}</p>
+                                            </div>
+                                            <span className="flex-shrink-0 inline-flex px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">
+                                                {label.carrier}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center justify-between text-xs text-gray-600">
+                                            <span>{label.recipientName} · {label.recipientCity}, {label.recipientState}</span>
+                                            <span>{label.createdDate}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs text-gray-500">${label.cost.toFixed(2)}</span>
+                                            <div className="flex items-center gap-1">
+                                                <button onClick={() => handleView(label)} disabled={actionLoading === `view-${label.id}`} className="p-1.5 hover:bg-gray-100 rounded disabled:opacity-50" title="View">
+                                                    <Eye className="h-4 w-4 text-gray-400" />
+                                                </button>
+                                                <button onClick={() => handleDownload(label)} disabled={actionLoading === `download-${label.id}`} className="p-1.5 hover:bg-gray-100 rounded disabled:opacity-50" title="Download">
+                                                    <Download className="h-4 w-4 text-gray-400" />
+                                                </button>
+                                                <button onClick={() => handlePrint(label)} disabled={actionLoading === `print-${label.id}`} className="p-1.5 hover:bg-gray-100 rounded disabled:opacity-50" title="Print">
+                                                    <Printer className="h-4 w-4 text-gray-400" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Desktop table */}
+                            <div className="hidden md:block overflow-x-auto">
                                 <table className="w-full">
                                     <thead className="bg-gray-50 border-b border-gray-200">
                                         <tr>
@@ -489,28 +525,13 @@ export default function HistoryPage() {
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-right">
                                                     <div className="flex items-center justify-end gap-2">
-                                                        <button
-                                                            onClick={() => handleView(label)}
-                                                            disabled={actionLoading === `view-${label.id}`}
-                                                            className="p-1.5 hover:bg-gray-100 rounded transition-colors disabled:opacity-50"
-                                                            title="View Label"
-                                                        >
+                                                        <button onClick={() => handleView(label)} disabled={actionLoading === `view-${label.id}`} className="p-1.5 hover:bg-gray-100 rounded transition-colors disabled:opacity-50" title="View Label">
                                                             <Eye className="h-4 w-4 text-gray-400" />
                                                         </button>
-                                                        <button
-                                                            onClick={() => handleDownload(label)}
-                                                            disabled={actionLoading === `download-${label.id}`}
-                                                            className="p-1.5 hover:bg-gray-100 rounded transition-colors disabled:opacity-50"
-                                                            title="Download Label"
-                                                        >
+                                                        <button onClick={() => handleDownload(label)} disabled={actionLoading === `download-${label.id}`} className="p-1.5 hover:bg-gray-100 rounded transition-colors disabled:opacity-50" title="Download Label">
                                                             <Download className="h-4 w-4 text-gray-400" />
                                                         </button>
-                                                        <button
-                                                            onClick={() => handlePrint(label)}
-                                                            disabled={actionLoading === `print-${label.id}`}
-                                                            className="p-1.5 hover:bg-gray-100 rounded transition-colors disabled:opacity-50"
-                                                            title="Print Label"
-                                                        >
+                                                        <button onClick={() => handlePrint(label)} disabled={actionLoading === `print-${label.id}`} className="p-1.5 hover:bg-gray-100 rounded transition-colors disabled:opacity-50" title="Print Label">
                                                             <Printer className="h-4 w-4 text-gray-400" />
                                                         </button>
                                                     </div>

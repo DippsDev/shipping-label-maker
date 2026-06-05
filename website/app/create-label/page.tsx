@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Package, LayoutDashboard, Tag, History, Wallet, MapPin, Search, Settings, Download, Printer, BookOpen, Menu, X, Lock } from "lucide-react";
+import { Package, LayoutDashboard, Tag, History, Wallet, MapPin, Search, Settings, Download, Printer, BookOpen, Menu, X, Lock, LogOut } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useSession, signOut } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
@@ -661,7 +661,7 @@ export default function CreateLabel() {
 
             {/* Sidebar */}
             <aside className={`fixed xl:sticky xl:top-0 xl:h-screen inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 flex flex-col transform transition-transform duration-300 ease-in-out ${showMobileMenu ? 'translate-x-0' : '-translate-x-full'} xl:translate-x-0`}>
-                <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+                <div className="px-4 pb-4 safe-top border-b border-gray-200 flex items-center justify-between">
                     <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
                         <Package className="h-6 w-6 text-gray-700" />
                         <span className="text-lg font-semibold text-gray-900">Label Maker</span>
@@ -720,7 +720,7 @@ export default function CreateLabel() {
             {/* Main Content */}
             <main className="flex-1 w-full xl:w-auto">
                 {/* Header */}
-                <header className="bg-white border-b border-gray-200 px-4 md:px-8 py-4 flex items-center justify-between">
+                <header className="bg-white border-b border-gray-200 px-4 md:px-8 pb-4 safe-top flex items-center justify-between">
                     <div className="flex items-center gap-3 flex-1">
                         <button
                             onClick={() => setShowMobileMenu(true)}
@@ -729,8 +729,8 @@ export default function CreateLabel() {
                             <Menu className="h-5 w-5 text-gray-600" />
                         </button>
                         <div className="flex-1 text-center xl:text-left pr-16 xl:pr-0">
-                            <h1 className="text-xl md:text-2xl font-semibold text-gray-900">Create Label</h1>
-                            <p className="text-xs md:text-sm text-gray-600 mt-1">Generate a shipping label for your package</p>
+                            <h1 className="text-lg md:text-2xl font-semibold text-gray-900">Create Label</h1>
+                            <p className="hidden sm:block text-xs md:text-sm text-gray-600 mt-1">Generate a shipping label for your package</p>
                         </div>
                     </div>
                     <div className="relative" ref={menuRef}>
@@ -747,30 +747,31 @@ export default function CreateLabel() {
                         </button>
 
                         {showAccountMenu && (
-                            <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
-                                <div className="px-4 py-2 border-b border-gray-200">
-                                    <p className="text-xs text-gray-500 uppercase font-medium mb-2">Account</p>
+                            <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden z-50">
+                                <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
+                                    <p className="text-xs text-gray-400 uppercase tracking-wide font-medium mb-2">Signed in as</p>
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                                        <div className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
                                             <span className="text-sm font-medium text-gray-900">{userInitials}</span>
                                         </div>
-                                        <div>
-                                            <p className="text-sm font-medium text-gray-900">
+                                        <div className="min-w-0">
+                                            <p className="text-sm font-medium text-gray-900 truncate">
                                                 {session?.user?.user_metadata?.name || "Test User"}
                                             </p>
-                                            <p className="text-xs text-gray-500">{session?.user?.email || "test@example.com"}</p>
+                                            <p className="text-xs text-gray-500 truncate">{session?.user?.email || "test@example.com"}</p>
                                         </div>
                                     </div>
                                 </div>
-                                <div className="border-t border-gray-200 pt-2">
-                                    <Link href="/settings" className="w-full px-4 py-2 text-left hover:bg-gray-50 text-sm text-gray-700 flex items-center gap-2">
-                                        <Settings className="h-4 w-4" />
+                                <div className="py-1">
+                                    <Link href="/settings" className="w-full px-4 py-2.5 text-left hover:bg-gray-50 text-sm text-gray-700 flex items-center gap-2.5 transition-colors">
+                                        <Settings className="h-4 w-4 text-gray-500" />
                                         Settings
                                     </Link>
                                     <button
                                         onClick={handleSignOut}
-                                        className="w-full px-4 py-2 text-left hover:bg-gray-50 text-sm text-red-600"
+                                        className="w-full px-4 py-2.5 text-left hover:bg-red-50 text-sm text-red-600 flex items-center gap-2.5 transition-colors"
                                     >
+                                        <LogOut className="h-4 w-4" />
                                         Sign Out
                                     </button>
                                 </div>
@@ -791,9 +792,11 @@ export default function CreateLabel() {
 
                                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 md:gap-3 mb-4">
                                     <button
-                                        disabled
-                                        title="UPS labels are coming soon"
-                                        className="px-3 md:px-4 py-2 rounded-lg text-sm md:text-base font-medium border border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed opacity-50"
+                                        onClick={() => setSelectedCarrier("UPS")}
+                                        className={`px-3 md:px-4 py-2 rounded-lg text-sm md:text-base font-medium transition-colors ${selectedCarrier === "UPS"
+                                            ? "border-2 border-gray-900 bg-gray-50 text-gray-900"
+                                            : "border border-gray-300 text-gray-700 hover:bg-gray-50"
+                                            }`}
                                     >
                                         UPS
                                     </button>

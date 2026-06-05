@@ -13,7 +13,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
-      <header className="border-b border-gray-200">
+      <header className="border-b border-gray-200 safe-top-add">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Package className="h-6 w-6 text-gray-900" />
@@ -31,11 +31,11 @@ export default function Home() {
       </header>
 
       {/* Hero Section */}
-      <section className="max-w-7xl mx-auto px-6 py-20 text-center">
-        <h1 className="text-5xl font-bold text-gray-900 mb-4">
-          Create Shipping Labels<br />In Seconds
+      <section className="max-w-7xl mx-auto px-6 py-12 md:py-20 text-center">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+          Create Shipping Labels<br className="hidden sm:block" /> In Seconds
         </h1>
-        <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
+        <p className="text-base md:text-lg text-gray-600 mb-6 md:mb-8 max-w-2xl mx-auto">
           Professional shipping label generation for UPS, FedEx, USPS, Purolator, and Canada Post. Fast, reliable, and affordable.
         </p>
         <div className="flex items-center justify-center gap-4">
@@ -56,8 +56,8 @@ export default function Home() {
       </section>
 
       {/* Supported Carriers */}
-      <section className="max-w-7xl mx-auto px-6 py-16">
-        <h2 className="text-3xl font-bold text-gray-900 text-center mb-12">Supported Carriers</h2>
+      <section className="max-w-7xl mx-auto px-6 py-10 md:py-16">
+        <h2 className="text-2xl md:text-3xl font-bold text-gray-900 text-center mb-8 md:mb-12">Supported Carriers</h2>
         <div className="flex items-center justify-center gap-4 flex-wrap">
           <div className="bg-orange-500 text-white px-8 py-4 rounded-lg font-semibold text-lg">
             UPS
@@ -78,9 +78,9 @@ export default function Home() {
       </section>
 
       {/* Features Section */}
-      <section className="bg-gray-50 py-20">
+      <section className="bg-gray-50 py-12 md:py-20">
         <div className="max-w-7xl mx-auto px-6">
-          <h2 className="text-3xl font-bold text-gray-900 text-center mb-16">Why Choose Label Maker Pro?</h2>
+          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 text-center mb-8 md:mb-16">Why Choose Label Maker Pro?</h2>
           <div className="grid md:grid-cols-3 gap-8">
             <div className="bg-white p-8 rounded-lg">
               <TruckIcon className="h-12 w-12 text-gray-900 mb-4" />
@@ -136,9 +136,9 @@ export default function Home() {
       </section>
 
       {/* CTA Section */}
-      <section className="bg-gray-900 text-white py-20">
+      <section className="bg-gray-900 text-white py-12 md:py-20">
         <div className="max-w-4xl mx-auto px-6 text-center">
-          <h2 className="text-4xl font-bold mb-4">Ready to Get Started?</h2>
+          <h2 className="text-2xl md:text-4xl font-bold mb-4">Ready to Get Started?</h2>
           <p className="text-lg text-gray-300 mb-8">
             Create your account today and start generating professional shipping labels in minutes.
           </p>
