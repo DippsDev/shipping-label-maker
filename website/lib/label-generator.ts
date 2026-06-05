@@ -242,8 +242,9 @@ async function generatePurolatorLabel(data: Record<string, any>): Promise<Canvas
 async function generateUPSLabel(data: Record<string, any>): Promise<Canvas> {
   ensureFonts();
   const service = data.service || 'UPS Ground';
-  const templateFile = TEMPLATES.ups[service] || 'ups_ground.png';
-  const { canvas, ctx } = await loadTemplate(templateFile);
+  const bannerFile = TEMPLATES.ups[service];
+  // Always use the full label base; service-specific files are banner overlays only
+  const { canvas, ctx } = await loadTemplate('master.png');
 
   const rawTn = (data.trackingNumber || '').toUpperCase();
   const tn = data.scrambleTracking ? scrambleTrackingNumber(rawTn) : rawTn;
@@ -255,55 +256,78 @@ async function generateUPSLabel(data: Record<string, any>): Promise<Canvas> {
 
   ctx.fillStyle = '#000000';
 
+  // ── Section 1 (y=5–344): return address, zone, recipient address ──
+
   if (!data.litMode) {
     ctx.font = '13px Helvetica';
-    ctx.fillText(data.returnName || 'SENDER NAME',            30, 45);
-    ctx.fillText(data.returnAddress || '123 MAIN ST',         30, 60);
-    ctx.fillText(data.returnCityStateZip || 'CITY, ST 12345', 30, 75);
+    ctx.fillText(data.returnName || 'SENDER NAME',            21, 45);
+    ctx.fillText(data.returnAddress || '123 MAIN ST',         21, 60);
+    ctx.fillText(data.returnCityStateZip || 'CITY, ST 12345', 21, 75);
   }
 
+  // Zone number: right-aligned, baseline y=160 (clears pre-printed "1 OF 1" at y=12–30)
+  ctx.font = 'bold 120px HelveticaBold';
+  const zoneText = data.upsZone || '959';
+  const zoneW = ctx.measureText(zoneText).width;
+  ctx.fillText(zoneText, 661 - 25 - zoneW, 160);
+
+  // Recipient address: x=21 aligns with pre-printed "SHIP TO:" left edge (scanned at x=21)
   ctx.font = 'bold 24px HelveticaBold';
-  ctx.fillText((data.shipToName || '').toUpperCase(), 30, 280);
+  ctx.fillText((data.shipToName || '').toUpperCase(), 21, 200);
 
   ctx.font = '22px Helvetica';
   let addrEndY: number;
   if (addr2) {
-    ctx.fillText((data.shipToAddress || '').toUpperCase(), 30, 310);
-    ctx.fillText(addr2, 30, 335);
-    ctx.fillText(`${city}, ${state} ${zip}`, 30, 360);
-    addrEndY = 360;
+    ctx.fillText((data.shipToAddress || '').toUpperCase(), 21, 224);
+    ctx.fillText(addr2,                                    21, 246);
+    ctx.fillText(`${city}, ${state} ${zip}`,               21, 268);
+    addrEndY = 268;
   } else {
-    ctx.fillText((data.shipToAddress || '').toUpperCase(), 30, 310);
-    ctx.fillText(`${city}, ${state} ${zip}`, 30, 335);
-    addrEndY = 335;
+    ctx.fillText((data.shipToAddress || '').toUpperCase(), 21, 224);
+    ctx.fillText(`${city}, ${state} ${zip}`,               21, 246);
+    addrEndY = 246;
   }
 
-  let extraY = addrEndY + 28;
+  let extraY = addrEndY + 22;
   if (data.customPhone) {
     ctx.font = '20px Helvetica';
-    ctx.fillText(String(data.customPhone), 30, extraY);
-    extraY += 26;
+    ctx.fillText(String(data.customPhone), 21, extraY);
+    extraY += 22;
   }
   if (data.customReference) {
     ctx.font = '16px Helvetica';
-    ctx.fillText(`REF: ${data.customReference}`, 30, extraY);
+    ctx.fillText(`REF: ${data.customReference}`, 21, extraY);
   }
 
-  ctx.font = 'bold 72px HelveticaBold';
-  ctx.fillText(zip.slice(0, 5), 50, 480);
+  // ── Section 2 (y=344–523 = 179px): service banner (right col) + ZIP + weight ──
+  // Both banner and ZIP are vertically centered in the section so they sit at the same level.
+  // Section center y=433. Banner (h=60): y=404–464. ZIP (60px cap≈42px): baseline=454, center=433.
 
-  ctx.font = 'bold 120px HelveticaBold';
-  ctx.fillText(data.upsZone || '959', 580, 120);
+  // Service banner: centered in section, right column (x=210+)
+  if (bannerFile && bannerFile !== 'master.png') {
+    const bannerImg = await loadImage(fs.readFileSync(path.join(TEMPLATES_DIR, bannerFile)));
+    const bannerH = 60;
+    const bannerW = Math.round((bannerImg.width as number) * bannerH / (bannerImg.height as number));
+    ctx.drawImage(bannerImg, 210, 404, bannerW, bannerH);
+  }
 
+  // Destination ZIP: centered in section, left column (x=7–202)
+  ctx.font = 'bold 60px HelveticaBold';
+  ctx.fillText(zip.slice(0, 5), 12, 454);
+
+  // Weight: bottom-right of section
   if (!data.removeWeight) {
     ctx.font = 'bold 24px HelveticaBold';
-    ctx.fillText(`${data.weight || '1'} LB`, 600, 380);
+    ctx.fillText(`${data.weight || '1'} LB`, 580, 510);
   }
 
-  ctx.font = 'bold 20px HelveticaBold';
-  ctx.fillText(formattedTracking, 30, 750);
+  // ── Section 3 (y=523–814): tracking number text + barcode ──
+  // Tracking number: baseline y=604 matches pre-printed "TRACKING #:" baseline; x=150 starts after it ends at x=137
+  ctx.font = 'bold 18px HelveticaBold';
+  ctx.fillText(formattedTracking, 150, 604);
 
-  await pasteBarcode(ctx, tn, 30, 600, 680, 140);
+  // Sub-section 3b (y=626–814 = 188px): barcode fills this zone
+  await pasteBarcode(ctx, tn, 30, 638, 600, 165);
   return canvas;
 }
 
